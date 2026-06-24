@@ -126,24 +126,47 @@ allowRoles(["Admin", "Supervisor", "Mechanic"]);
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-document.getElementById("staff").value =
-    localStorage.getItem("fullName");
+const loggedInName = localStorage.getItem("fullName");
+const loggedInRole = localStorage.getItem("role");
 
-document.getElementById("position").value =
-    localStorage.getItem("role");
+document.getElementById("staff").value = loggedInName;
 
 document.getElementById("userInfo").innerText =
     "Logged in as: " +
-    localStorage.getItem("fullName") +
+    loggedInName +
     " (" +
-    localStorage.getItem("role") +
+    loggedInRole +
     ")";
 
 document
 .getElementById("employeeTaskForm")
 .addEventListener("submit", submitTask);
 
+loadStaffPosition();
 loadVehicles();
+
+async function loadStaffPosition(){
+
+    const response =
+        await fetch(apiUrl + "?action=staff");
+
+    const staffList =
+        await response.json();
+
+    const staff =
+        staffList.find(person =>
+            String(person["Staff Name"]).trim().toLowerCase() ===
+            String(loggedInName).trim().toLowerCase()
+        );
+
+    if(staff){
+        document.getElementById("position").value =
+            staff["Position"] || "";
+    }else{
+        document.getElementById("position").value =
+            loggedInRole;
+    }
+}
 
 async function loadVehicles(){
 
@@ -197,11 +220,9 @@ async function submitTask(e){
 
         document.getElementById("employeeTaskForm").reset();
 
-        document.getElementById("staff").value =
-            localStorage.getItem("fullName");
+        document.getElementById("staff").value = loggedInName;
 
-        document.getElementById("position").value =
-            localStorage.getItem("role");
+        loadStaffPosition();
 
     }catch(error){
 
