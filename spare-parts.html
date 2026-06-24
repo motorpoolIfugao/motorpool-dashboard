@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Spare Parts Monitoring</title>
+
+<style>
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+}
+
+h1{
+    color:#1b5e20;
+}
+
+form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+input,
+select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    padding:12px;
+    border:none;
+    background:#1b5e20;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2e7d32;
+}
+
+.full{
+    grid-column:span 2;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th{
+    background:#1b5e20;
+    color:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+.status{
+    padding:5px 10px;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+}
+
+.status.Pending{
+    background:#fd7e14;
+}
+
+.status.Available{
+    background:#198754;
+}
+
+.status.Cancelled{
+    background:#dc3545;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Spare Parts Request Monitoring</h1>
+
+<form id="partsForm">
+
+    <input type="date" id="dateRequested" required>
+
+    <select id="vehicle" required>
+        <option value="">Select Vehicle / Equipment</option>
+    </select>
+
+    <input type="text" id="partNeeded" placeholder="Part Needed" required>
+
+    <input type="number" id="quantity" placeholder="Quantity" required>
+
+    <select id="status">
+        <option>Pending</option>
+        <option>Available</option>
+        <option>Cancelled</option>
+    </select>
+
+    <button class="full" type="submit">
+        Save Spare Part Request
+    </button>
+
+</form>
+
+<div id="message"></div>
+
+<h2>Parts Request List</h2>
+
+<table>
+<thead>
+<tr>
+    <th>Date Requested</th>
+    <th>Vehicle</th>
+    <th>Part Needed</th>
+    <th>Quantity</th>
+    <th>Status</th>
+</tr>
+</thead>
+
+<tbody id="partsBody">
+</tbody>
+</table>
+
+<br>
+
+<button onclick="window.location.href='dashboard.html'">
+    Back to Dashboard
+</button>
+
+</div>
+
+<script src="js/spare-parts.js"></script>
+<script src="js/auth-check.js"></script>
+<script>
+allowRoles(["Admin", "Supervisor"]);
+</script>
+<script src="js/spare-parts.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Motorpool Weekly Report</title>
+
+<style>
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.header h2,
+.header h3{
+    margin:5px;
+}
+
+.controls{
+    margin-bottom:20px;
+    background:white;
+    padding:15px;
+    border-radius:8px;
+}
+
+.controls input,
+.controls button{
+    padding:10px;
+    margin-right:10px;
+}
+
+button{
+    background:#1b5e20;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2e7d32;
+}
+
+.summary{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    border-radius:8px;
+    text-align:center;
+    box-shadow:0 2px 5px rgba(0,0,0,.1);
+}
+
+.card h2{
+    margin:0;
+    color:#1b5e20;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    font-size:13px;
+}
+
+th{
+    background:#1b5e20;
+    color:white;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:8px;
+    vertical-align:top;
+}
+
+.status{
+    padding:4px 8px;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+    display:inline-block;
+}
+
+.status.Planned{
+    background:#6c757d;
+}
+
+.status.Ongoing{
+    background:#fd7e14;
+}
+
+.status.Finished{
+    background:#198754;
+}
+
+.status.Delayed{
+    background:#dc3545;
+}
+
+.status.Waiting{
+    background:#0d6efd;
+}
+
+.print-footer{
+    margin-top:50px;
+    display:flex;
+    justify-content:center;
+    gap:60px;
+    page-break-inside:avoid;
+}
+
+.signature-box{
+    width:160px;
+    text-align:center;
+}
+
+.signature-line{
+    border-top:1px solid black;
+    height:25px;
+    margin-bottom:5px;
+}
+
+.signature-title{
+    font-size:12px;
+    font-weight:bold;
+}
+
+@media print{
+
+    body{
+        background:white;
+        margin:10px;
+    }
+
+    .controls{
+        display:none;
+    }
+
+    button{
+        display:none;
+    }
+
+    .card{
+        box-shadow:none;
+        border:1px solid #ccc;
+    }
+
+    table{
+        font-size:11px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>PROVINCIAL MOTORPOOL</h2>
+    <h3>Weekly Work Plan and Accomplishment Report</h3>
+    <p id="reportPeriod"></p>
+</div>
+
+<div class="controls">
+    <label>From:</label>
+    <input type="date" id="fromDate">
+
+    <label>To:</label>
+    <input type="date" id="toDate">
+
+    <button onclick="loadReport()">Generate Report</button>
+
+    <button onclick="window.print()">Print Report</button>
+
+    <button onclick="downloadExcel()">Download Excel</button>
+
+    <button onclick="window.location.href='dashboard.html'">
+        Back to Dashboard
+    </button>
+</div>
+
+<div class="summary">
+
+    <div class="card">
+        <h2 id="totalTasks">0</h2>
+        <p>Total Tasks</p>
+    </div>
+
+    <div class="card">
+        <h2 id="finishedTasks">0</h2>
+        <p>Finished</p>
+    </div>
+
+    <div class="card">
+        <h2 id="ongoingTasks">0</h2>
+        <p>Ongoing</p>
+    </div>
+
+    <div class="card">
+        <h2 id="delayedTasks">0</h2>
+        <p>Delayed</p>
+    </div>
+
+    <div class="card">
+        <h2 id="waitingTasks">0</h2>
+        <p>Waiting Parts</p>
+    </div>
+
+    <div class="card">
+        <h2 id="completionRate">0%</h2>
+        <p>Completion Rate</p>
+    </div>
+
+</div>
+
+<table>
+<thead>
+<tr>
+    <th>No.</th>
+    <th>Staff</th>
+    <th>Position</th>
+    <th>Vehicle/Equipment</th>
+    <th>Target Activity</th>
+    <th>Start Date</th>
+    <th>Target Completion</th>
+    <th>Actual Accomplishment</th>
+    <th>Status</th>
+    <th>% Completion</th>
+    <th>Remarks</th>
+</tr>
+</thead>
+
+<tbody id="reportBody">
+</tbody>
+</table>
+
+<div class="print-footer">
+
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-title">Prepared by</div>
+    </div>
+
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-title">Checked by</div>
+    </div>
+
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-title">Approved by</div>
+    </div>
+
+</div>
+
+<script src="js/report.js"></script>
+<script src="js/auth-check.js"></script>
+<script>
+allowRoles(["Admin", "Supervisor"]);
+</script>
+<script src="js/report.js"></script>
+
+</body>
+</html>

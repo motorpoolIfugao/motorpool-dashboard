@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Motorpool Executive Dashboard</title>
+
+<style>
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+.header{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.header h1{
+    color:#1b5e20;
+    margin-bottom:5px;
+}
+
+.controls{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
+    text-align:center;
+}
+
+.controls input,
+.controls button{
+    padding:10px;
+    margin:5px;
+}
+
+button{
+    background:#1b5e20;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+.summary{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:12px;
+    margin-bottom:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    text-align:center;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+
+.card h2{
+    margin:0;
+    color:#1b5e20;
+    font-size:32px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    font-size:13px;
+}
+
+th{
+    background:#1b5e20;
+    color:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:8px;
+    vertical-align:top;
+}
+
+.status{
+    padding:5px 10px;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+    display:inline-block;
+}
+
+.status.Planned{
+    background:#6c757d;
+}
+
+.status.Ongoing{
+    background:#fd7e14;
+}
+
+.status.Finished{
+    background:#198754;
+}
+
+.status.Delayed{
+    background:#dc3545;
+}
+
+.status.Waiting{
+    background:#0d6efd;
+}
+
+@media print{
+    .controls{
+        display:none;
+    }
+
+    body{
+        background:white;
+    }
+
+    .card{
+        box-shadow:none;
+        border:1px solid #ccc;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Motorpool Executive Dashboard</h1>
+    <h3>Weekly Work Plan and Accomplishment Summary</h3>
+    <p id="periodText"></p>
+</div>
+
+<div class="controls">
+    <label>From:</label>
+    <input type="date" id="fromDate">
+
+    <label>To:</label>
+    <input type="date" id="toDate">
+
+    <button onclick="loadBossDashboard()">Generate</button>
+    <button onclick="window.print()">Print</button>
+    <button onclick="downloadExcel()">Download Excel</button>
+</div>
+
+<div class="summary">
+
+    <div class="card">
+        <h2 id="totalTasks">0</h2>
+        <p>Total Tasks</p>
+    </div>
+
+    <div class="card">
+        <h2 id="finishedTasks">0</h2>
+        <p>Finished</p>
+    </div>
+
+    <div class="card">
+        <h2 id="ongoingTasks">0</h2>
+        <p>Ongoing</p>
+    </div>
+
+    <div class="card">
+        <h2 id="delayedTasks">0</h2>
+        <p>Delayed</p>
+    </div>
+
+    <div class="card">
+        <h2 id="waitingTasks">0</h2>
+        <p>Waiting Parts</p>
+    </div>
+
+    <div class="card">
+        <h2 id="completionRate">0%</h2>
+        <p>Completion Rate</p>
+    </div>
+
+</div>
+
+<table>
+<thead>
+<tr>
+    <th>No.</th>
+    <th>Staff</th>
+    <th>Vehicle/Equipment</th>
+    <th>Target Activity</th>
+    <th>Actual Accomplishment</th>
+    <th>Status</th>
+    <th>% Completion</th>
+    <th>Remarks</th>
+</tr>
+</thead>
+
+<tbody id="dashboardBody">
+</tbody>
+</table>
+
+<script>
+const apiUrl =
+"https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
+
+let currentData = [];
+
+loadBossDashboard();
+
+async function loadBossDashboard(){
+
+    const response =
+        await fetch(apiUrl + "?action=tasks");
+
+    const data =
+        await response.json();
+
+    const fromDate =
+        document.getElementById("fromDate").value;
+
+    const toDate =
+        document.getElementById("toDate").value;
+
+    let filteredData = data;
+
+    if(fromDate && toDate){
+
+        filteredData = data.filter(task => {
+
+            if(!task["Start Date"]) return true;
+
+            const taskDate =
+                getDateOnly(task["Start Date"]);
+
+            return taskDate >= fromDate && taskDate <= toDate;
+        });
+
+        document.getElementById("periodText").innerText =
+            "Period Covered: " +
+            formatDate(fromDate) +
+            " to " +
+            formatDate(toDate);
+
+    }else{
+
+        document.getElementById("periodText").innerText =
+            "All Recorded Work Plans";
+    }
+
+    currentData = filteredData;
+
+    renderSummary(filteredData);
+    renderTable(filteredData);
+}
+
+function renderSummary(data){
+
+    let finished = 0;
+    let ongoing = 0;
+    let delayed = 0;
+    let waiting = 0;
+
+    data.forEach(task => {
+
+        const status =
+            String(task["Status"] || "").toLowerCase();
+
+        if(status === "finished") finished++;
+        if(status === "ongoing") ongoing++;
+        if(status === "delayed") delayed++;
+        if(status.includes("waiting")) waiting++;
+    });
+
+    const total = data.length;
+
+    const completion =
+        total > 0
+        ? Math.round((finished / total) * 100)
+        : 0;
+
+    document.getElementById("totalTasks").innerText = total;
+    document.getElementById("finishedTasks").innerText = finished;
+    document.getElementById("ongoingTasks").innerText = ongoing;
+    document.getElementById("delayedTasks").innerText = delayed;
+    document.getElementById("waitingTasks").innerText = waiting;
+    document.getElementById("completionRate").innerText = completion + "%";
+}
+
+function renderTable(data){
+
+    const dashboardBody =
+        document.getElementById("dashboardBody");
+
+    dashboardBody.innerHTML = "";
+
+    if(data.length === 0){
+
+        dashboardBody.innerHTML =
+        `
+        <tr>
+            <td colspan="8" style="text-align:center;">
+                No records found.
+            </td>
+        </tr>
+        `;
+
+        return;
+    }
+
+    data.forEach(task => {
+
+        const status =
+            task["Status"] || "";
+
+        const statusClass =
+            status.includes("Waiting")
+            ? "Waiting"
+            : status;
+
+        dashboardBody.innerHTML += `
+        <tr>
+            <td>${task["No."] || ""}</td>
+            <td>${task["Staff Name"] || ""}</td>
+            <td>${task["Vehicle/Equipment"] || ""}</td>
+            <td>${task["Target Activity"] || ""}</td>
+            <td>${task["Actual Accomplishment"] || ""}</td>
+            <td>
+                <span class="status ${statusClass}">
+                    ${status}
+                </span>
+            </td>
+            <td>${task["% Completion"] || ""}</td>
+            <td>${task["Remarks"] || ""}</td>
+        </tr>
+        `;
+    });
+}
+
+function downloadExcel(){
+
+    if(currentData.length === 0){
+        alert("No data available to download.");
+        return;
+    }
+
+    let table = `
+    <table border="1">
+        <tr>
+            <th colspan="8">Motorpool Executive Dashboard</th>
+        </tr>
+        <tr>
+            <th colspan="8">${document.getElementById("periodText").innerText}</th>
+        </tr>
+        <tr>
+            <th>No.</th>
+            <th>Staff</th>
+            <th>Vehicle/Equipment</th>
+            <th>Target Activity</th>
+            <th>Actual Accomplishment</th>
+            <th>Status</th>
+            <th>% Completion</th>
+            <th>Remarks</th>
+        </tr>
+    `;
+
+    currentData.forEach(task => {
+
+        table += `
+        <tr>
+            <td>${task["No."] || ""}</td>
+            <td>${task["Staff Name"] || ""}</td>
+            <td>${task["Vehicle/Equipment"] || ""}</td>
+            <td>${task["Target Activity"] || ""}</td>
+            <td>${task["Actual Accomplishment"] || ""}</td>
+            <td>${task["Status"] || ""}</td>
+            <td>${task["% Completion"] || ""}</td>
+            <td>${task["Remarks"] || ""}</td>
+        </tr>
+        `;
+    });
+
+    table += `</table>`;
+
+    const file = new Blob([table], {
+        type:"application/vnd.ms-excel"
+    });
+
+    const url = URL.createObjectURL(file);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "Motorpool_Executive_Dashboard.xls";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+}
+
+function getDateOnly(dateString){
+
+    if(!dateString) return "";
+
+    const date = new Date(dateString);
+
+    const year = date.getFullYear();
+
+    const month =
+        String(date.getMonth() + 1).padStart(2, "0");
+
+    const day =
+        String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function formatDate(dateString){
+
+    if(!dateString) return "";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-PH",{
+        year:"numeric",
+        month:"short",
+        day:"numeric"
+    });
+}
+</script>
+
+</body>
+</html>

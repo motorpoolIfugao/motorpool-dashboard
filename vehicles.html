@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Vehicle Status Monitoring</title>
+
+<style>
+body{
+    font-family:Arial, sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+}
+
+h1{
+    color:#1b5e20;
+}
+
+form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-bottom:25px;
+}
+
+input,
+select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+button{
+    padding:10px 14px;
+    border:none;
+    background:#1b5e20;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2e7d32;
+}
+
+.full{
+    grid-column:span 2;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th{
+    background:#1b5e20;
+    color:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+.status{
+    padding:5px 10px;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+    display:inline-block;
+}
+
+.Operational{
+    background:#198754;
+}
+
+.Under-Repair{
+    background:#fd7e14;
+}
+
+.Waiting-for-Parts{
+    background:#0d6efd;
+}
+
+.For-PMS{
+    background:#6f42c1;
+}
+
+.Unserviceable{
+    background:#dc3545;
+}
+
+#message{
+    margin-top:10px;
+    font-weight:bold;
+    color:green;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Vehicle Status Monitoring</h1>
+
+<form id="vehicleForm">
+
+    <input
+        type="text"
+        id="plateNo"
+        placeholder="Plate No."
+        required>
+
+    <input
+        type="text"
+        id="vehicleName"
+        placeholder="Vehicle / Equipment"
+        required>
+
+    <input
+        type="text"
+        id="department"
+        placeholder="Department / Office">
+
+    <select id="status">
+        <option>Operational</option>
+        <option>Under Repair</option>
+        <option>Waiting for Parts</option>
+        <option>For PMS</option>
+        <option>Unserviceable</option>
+    </select>
+
+    <button class="full" type="submit">
+        Save Vehicle
+    </button>
+
+</form>
+
+<div id="message"></div>
+
+<h2>Vehicle List</h2>
+
+<table>
+<thead>
+<tr>
+    <th>Vehicle ID</th>
+    <th>Plate No.</th>
+    <th>Vehicle / Equipment</th>
+    <th>Department</th>
+    <th>Current Status</th>
+    <th>Update Status</th>
+    <th>Action</th>
+</tr>
+</thead>
+
+<tbody id="vehicleBody">
+</tbody>
+</table>
+
+<br>
+
+<button onclick="window.location.href='dashboard.html'">
+    Back to Dashboard
+</button>
+
+</div>
+
+<script src="js/vehicles.js"></script>
+<script src="js/auth-check.js"></script>
+<script>
+allowRoles(["Admin"]);
+</script>
+<script src="js/vehicles.js"></script>
+
+</body>
+</html>

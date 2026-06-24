@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Accomplishment Report</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+.main{
+    width:800px;
+    margin:30px auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+}
+
+button{
+    margin-top:15px;
+    padding:12px;
+    width:100%;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="main">
+
+<h1>Update Task Progress</h1>
+
+<input
+type="number"
+id="taskNo"
+placeholder="Task Number">
+
+<textarea
+id="actual"
+placeholder="Actual Accomplishment"></textarea>
+
+<select id="status">
+    <option>Planned</option>
+    <option>Ongoing</option>
+    <option>Finished</option>
+    <option>Delayed</option>
+</select>
+
+<select id="percent">
+    <option>0%</option>
+    <option>25%</option>
+    <option>50%</option>
+    <option>75%</option>
+    <option>100%</option>
+</select>
+
+<textarea
+id="remarks"
+placeholder="Remarks"></textarea>
+
+<button onclick="updateTask()">
+Update Task
+</button>
+
+<div id="message"></div>
+
+</div>
+
+<script src="js/accomplishment.js"></script>
+
+</body>
+</html>

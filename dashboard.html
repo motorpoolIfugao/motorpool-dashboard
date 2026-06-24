@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Motorpool Dashboard</title>
+
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.card-container{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+    margin:20px 0;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    text-align:center;
+    box-shadow:0 2px 5px rgba(0,0,0,.1);
+}
+
+.card h2{
+    margin:0;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:#1b5e20;
+    color:white;
+}
+
+th,td{
+    padding:10px;
+    border:1px solid #ddd;
+}
+
+tr:hover{
+    background:#f2f2f2;
+}
+
+.search{
+    width:300px;
+    padding:10px;
+    margin-bottom:15px;
+}
+
+.status{
+    padding:5px 10px;
+    border-radius:5px;
+    color:white;
+    font-weight:bold;
+}
+
+.status.Planned{
+    background:#6c757d;
+}
+
+.status.Ongoing{
+    background:#fd7e14;
+}
+
+.status.Finished{
+    background:#198754;
+}
+
+.status.Delayed{
+    background:#dc3545;
+}
+
+button{
+    background:#0d6efd;
+    color:white;
+    border:none;
+    padding:8px 12px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Motorpool Weekly Dashboard</h1>
+
+    <p id="userInfo"></p>
+
+    <button onclick="window.location.href='report.html'">
+    Print Weekly Report
+    </button>
+
+    <button onclick="window.location.href='spare-parts.html'">
+    Spare Parts Monitoring
+    </button>
+
+    <button onclick="window.location.href='vehicles.html'">
+    Vehicle Monitoring
+    </button>
+
+    <button id="adminBtn" onclick="window.location.href='admin.html'">
+    Admin Panel
+    </button>
+
+    <button id="taskManagementBtn" onclick="window.location.href='task-management.html'">
+    Task Management
+    </button>
+
+    <button id="employeeTaskBtn" onclick="window.location.href='employee-task.html'">
+    Submit My Task
+    </button>
+
+    <button onclick="logout()">
+    Logout
+    </button>
+    
+</div>
+
+<input
+type="text"
+id="search"
+class="search"
+placeholder="Search Staff..."
+onkeyup="filterTable()">
+
+<div class="card-container">
+
+    <div class="card">
+        <h2 id="totalTasks">0</h2>
+        <p>Total Tasks</p>
+    </div>
+
+    <div class="card">
+        <h2 id="plannedTasks">0</h2>
+        <p>Planned</p>
+    </div>
+
+    <div class="card">
+        <h2 id="ongoingTasks">0</h2>
+        <p>Ongoing</p>
+    </div>
+
+    <div class="card">
+        <h2 id="finishedTasks">0</h2>
+        <p>Finished</p>
+    </div>
+
+</div>
+
+<table id="taskTable">
+
+<thead>
+<tr>
+<th>No.</th>
+<th>Staff</th>
+<th>Position</th>
+<th>Vehicle</th>
+<th>Target Activity</th>
+<th>Start Date</th>
+<th>Target Completion</th>
+<th>Status</th>
+<th>% Completion</th>
+<th>Remarks</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="tableBody">
+</tbody>
+
+</table>
+
+<script src="js/dashboard.js"></script>
+<script src="js/auth-check.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>
