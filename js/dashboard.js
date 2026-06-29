@@ -1,17 +1,21 @@
-const apiUrl =
+const dashboardApiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-const fullName = localStorage.getItem("fullName") || "";
-const role = localStorage.getItem("role") || "";
+const dashboardFullName =
+    localStorage.getItem("fullName") || "";
 
-const userInfo = document.getElementById("userInfo");
+const dashboardRole =
+    localStorage.getItem("role") || "";
 
-if(userInfo){
-    userInfo.innerText =
+const userInfoBox =
+    document.getElementById("userInfo");
+
+if(userInfoBox){
+    userInfoBox.innerText =
         "Logged in as: " +
-        fullName +
+        dashboardFullName +
         " (" +
-        role +
+        dashboardRole +
         ")";
 }
 
@@ -19,16 +23,24 @@ loadTasks();
 
 async function loadTasks(){
 
+    const tableBody =
+        document.getElementById("tableBody");
+
     try{
 
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align:center;">
+                    Loading dashboard data...
+                </td>
+            </tr>
+        `;
+
         const response =
-            await fetch(apiUrl + "?action=tasks");
+            await fetch(dashboardApiUrl + "?action=tasks");
 
         const data =
             await response.json();
-
-        const tableBody =
-            document.getElementById("tableBody");
 
         tableBody.innerHTML = "";
 
@@ -36,7 +48,7 @@ async function loadTasks(){
         let ongoing = 0;
         let finished = 0;
 
-        if(data.length === 0){
+        if(!Array.isArray(data) || data.length === 0){
 
             tableBody.innerHTML = `
                 <tr>
@@ -97,9 +109,6 @@ async function loadTasks(){
 
         console.error("Dashboard loading error:", error);
 
-        const tableBody =
-            document.getElementById("tableBody");
-
         tableBody.innerHTML = `
             <tr>
                 <td colspan="11" style="text-align:center;color:red;">
@@ -148,9 +157,12 @@ function formatDate(dateString){
 
     if(!dateString) return "";
 
-    const date = new Date(dateString);
+    const date =
+        new Date(dateString);
 
-    if(isNaN(date)) return dateString;
+    if(isNaN(date)){
+        return dateString;
+    }
 
     return date.toLocaleDateString("en-PH",{
         year:"numeric",
