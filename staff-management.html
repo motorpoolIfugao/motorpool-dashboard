@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>User Management</title>
+<title>Staff Management</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="css/gov-theme.css?v=1">
 
 <style>
-.user-card{
+.staff-card{
     background:white;
     padding:25px;
     border-radius:12px;
@@ -17,10 +17,19 @@
     margin-bottom:22px;
 }
 
-.user-card h2{
+.staff-card h2{
     margin-top:0;
     color:#0b4f2f;
     text-transform:uppercase;
+}
+
+.note{
+    background:#eef7f1;
+    border-left:5px solid #0b4f2f;
+    padding:10px 12px;
+    border-radius:6px;
+    margin-bottom:15px;
+    color:#1f2933;
 }
 
 .form-grid{
@@ -97,6 +106,15 @@ button{
     font-weight:bold;
 }
 
+.search{
+    width:320px;
+    max-width:100%;
+    padding:11px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    margin-bottom:15px;
+}
+
 .table-wrapper{
     overflow-x:auto;
 }
@@ -131,15 +149,6 @@ tr:nth-child(even){
     color:green;
 }
 
-.note{
-    background:#eef7f1;
-    border-left:5px solid #0b4f2f;
-    padding:10px 12px;
-    border-radius:6px;
-    margin-bottom:15px;
-    color:#1f2933;
-}
-
 @media(max-width:700px){
     .form-grid{
         grid-template-columns:1fr;
@@ -161,50 +170,34 @@ tr:nth-child(even){
     <main class="main-content">
 
         <header class="top-header">
-            <h1>User Management</h1>
-            <p>Add, edit, activate, or deactivate system users.</p>
+            <h1>Staff Management</h1>
+            <p>Add, edit, activate, or deactivate motorpool personnel.</p>
         </header>
 
         <section class="content-area">
 
-            <div class="user-card">
+            <div class="staff-card">
 
-                <h2 id="formTitle">Add New User</h2>
+                <h2 id="formTitle">Add New Staff</h2>
 
                 <div class="note">
-                    Passwords are not displayed in the user list. When editing a user, leave password blank if you do not want to change it.
+                    Staff names should match the Full Name in User Management so the position will load correctly when submitting tasks.
                 </div>
 
-                <form id="userForm">
+                <form id="staffForm">
 
-                    <input type="hidden" id="rowNumber">
+                    <input type="hidden" id="staffId">
 
                     <div class="form-grid">
 
-                        <div class="form-group">
-                            <label>Username</label>
-                            <input type="text" id="username" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="password" placeholder="Required for new user">
-                        </div>
-
                         <div class="form-group full">
-                            <label>Full Name</label>
-                            <input type="text" id="fullName" required>
+                            <label>Staff Name</label>
+                            <input type="text" id="staffName" required>
                         </div>
 
                         <div class="form-group">
-                            <label>Role</label>
-                            <select id="role" required>
-                                <option value="">Select Role</option>
-                                <option>Admin</option>
-                                <option>Supervisor</option>
-                                <option>Mechanic</option>
-                                <option>Viewer</option>
-                            </select>
+                            <label>Position</label>
+                            <input type="text" id="position" placeholder="Mechanic / Driver / Supervisor" required>
                         </div>
 
                         <div class="form-group">
@@ -219,7 +212,7 @@ tr:nth-child(even){
 
                     <div class="button-row">
                         <button type="submit" class="save-btn">
-                            Save User
+                            Save Staff
                         </button>
 
                         <button type="button" class="clear-btn" onclick="clearForm()">
@@ -233,25 +226,32 @@ tr:nth-child(even){
 
             </div>
 
-            <div class="user-card">
+            <div class="staff-card">
 
-                <h2>User List</h2>
+                <h2>Staff List</h2>
+
+                <input
+                    type="text"
+                    id="search"
+                    class="search"
+                    placeholder="Search staff..."
+                    onkeyup="filterStaff()">
 
                 <div class="table-wrapper">
 
-                    <table>
+                    <table id="staffTable">
 
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Full Name</th>
-                                <th>Role</th>
+                                <th>Staff ID</th>
+                                <th>Staff Name</th>
+                                <th>Position</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
 
-                        <tbody id="userBody"></tbody>
+                        <tbody id="staffBody"></tbody>
 
                     </table>
 
@@ -277,23 +277,23 @@ allowRoles(["Admin"]);
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-let users = [];
+let staffList = [];
 
 document
-.getElementById("userForm")
-.addEventListener("submit", saveUser);
+.getElementById("staffForm")
+.addEventListener("submit", saveStaff);
 
-loadUsers();
+loadStaff();
 
-async function loadUsers(){
+async function loadStaff(){
 
-    const userBody =
-        document.getElementById("userBody");
+    const staffBody =
+        document.getElementById("staffBody");
 
-    userBody.innerHTML = `
+    staffBody.innerHTML = `
         <tr>
             <td colspan="5" style="text-align:center;">
-                Loading users...
+                Loading staff...
             </td>
         </tr>
     `;
@@ -301,40 +301,40 @@ async function loadUsers(){
     try{
 
         const response =
-            await fetch(apiUrl + "?action=users");
+            await fetch(apiUrl + "?action=staff");
 
-        users =
+        staffList =
             await response.json();
 
-        renderUsers();
+        renderStaff();
 
     }catch(error){
 
         console.error(error);
 
-        userBody.innerHTML = `
+        staffBody.innerHTML = `
             <tr>
                 <td colspan="5" style="text-align:center;color:red;">
-                    Error loading users.
+                    Error loading staff.
                 </td>
             </tr>
         `;
     }
 }
 
-function renderUsers(){
+function renderStaff(){
 
-    const userBody =
-        document.getElementById("userBody");
+    const staffBody =
+        document.getElementById("staffBody");
 
-    userBody.innerHTML = "";
+    staffBody.innerHTML = "";
 
-    if(users.length === 0){
+    if(staffList.length === 0){
 
-        userBody.innerHTML = `
+        staffBody.innerHTML = `
             <tr>
                 <td colspan="5" style="text-align:center;">
-                    No users found.
+                    No staff found.
                 </td>
             </tr>
         `;
@@ -342,21 +342,33 @@ function renderUsers(){
         return;
     }
 
-    users.forEach(user => {
+    staffList.forEach(staff => {
+
+        const staffId =
+            staff["Staff ID"] || "";
+
+        const staffName =
+            staff["Staff Name"] || "";
+
+        const position =
+            staff["Position"] || "";
+
+        const status =
+            staff["Status"] || "";
 
         const statusClass =
-            user.status === "Active"
+            status === "Active"
             ? "status-active"
             : "status-inactive";
 
-        userBody.innerHTML += `
+        staffBody.innerHTML += `
             <tr>
-                <td>${user.username || ""}</td>
-                <td>${user.fullName || ""}</td>
-                <td>${user.role || ""}</td>
-                <td class="${statusClass}">${user.status || ""}</td>
+                <td>${staffId}</td>
+                <td>${staffName}</td>
+                <td>${position}</td>
+                <td class="${statusClass}">${status}</td>
                 <td>
-                    <button class="edit-btn" onclick="editUser(${user.rowNumber})">
+                    <button class="edit-btn" onclick="editStaff('${staffId}')">
                         Edit
                     </button>
                 </td>
@@ -365,39 +377,32 @@ function renderUsers(){
     });
 }
 
-function editUser(rowNumber){
+function editStaff(staffId){
 
-    const user =
-        users.find(u => Number(u.rowNumber) === Number(rowNumber));
+    const staff =
+        staffList.find(item =>
+            String(item["Staff ID"]) === String(staffId)
+        );
 
-    if(!user){
-        alert("User not found.");
+    if(!staff){
+        alert("Staff not found.");
         return;
     }
 
     document.getElementById("formTitle").innerText =
-        "Edit User";
+        "Edit Staff";
 
-    document.getElementById("rowNumber").value =
-        user.rowNumber;
+    document.getElementById("staffId").value =
+        staff["Staff ID"] || "";
 
-    document.getElementById("username").value =
-        user.username || "";
+    document.getElementById("staffName").value =
+        staff["Staff Name"] || "";
 
-    document.getElementById("password").value =
-        "";
-
-    document.getElementById("password").placeholder =
-        "Leave blank to keep current password";
-
-    document.getElementById("fullName").value =
-        user.fullName || "";
-
-    document.getElementById("role").value =
-        user.role || "";
+    document.getElementById("position").value =
+        staff["Position"] || "";
 
     document.getElementById("status").value =
-        user.status || "Active";
+        staff["Status"] || "Active";
 
     window.scrollTo({
         top: 0,
@@ -405,24 +410,18 @@ function editUser(rowNumber){
     });
 }
 
-async function saveUser(e){
+async function saveStaff(e){
 
     e.preventDefault();
 
-    const rowNumber =
-        document.getElementById("rowNumber").value;
+    const staffId =
+        document.getElementById("staffId").value;
 
-    const username =
-        document.getElementById("username").value.trim();
+    const staffName =
+        document.getElementById("staffName").value.trim();
 
-    const password =
-        document.getElementById("password").value.trim();
-
-    const fullName =
-        document.getElementById("fullName").value.trim();
-
-    const role =
-        document.getElementById("role").value;
+    const position =
+        document.getElementById("position").value.trim();
 
     const status =
         document.getElementById("status").value;
@@ -430,19 +429,11 @@ async function saveUser(e){
     const message =
         document.getElementById("message");
 
-    if(!rowNumber && !password){
-        message.style.color = "red";
-        message.innerText = "Password is required for a new user.";
-        return;
-    }
-
     const request = {
-        action: rowNumber ? "updateUser" : "createUser",
-        rowNumber: rowNumber,
-        username: username,
-        password: password,
-        fullName: fullName,
-        role: role,
+        action: staffId ? "updateStaff" : "createStaff",
+        staffId: staffId,
+        staffName: staffName,
+        position: position,
         status: status
     };
 
@@ -459,11 +450,11 @@ async function saveUser(e){
 
         message.style.color = "green";
         message.innerText =
-            "User saved. Refreshing list...";
+            "Staff saved. Refreshing list...";
 
         clearForm();
 
-        setTimeout(loadUsers, 1000);
+        setTimeout(loadStaff, 1000);
 
     }catch(error){
 
@@ -471,23 +462,42 @@ async function saveUser(e){
 
         message.style.color = "red";
         message.innerText =
-            "Error saving user.";
+            "Error saving staff.";
     }
 }
 
 function clearForm(){
 
     document.getElementById("formTitle").innerText =
-        "Add New User";
+        "Add New Staff";
 
-    document.getElementById("rowNumber").value = "";
-    document.getElementById("username").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("password").placeholder =
-        "Required for new user";
-    document.getElementById("fullName").value = "";
-    document.getElementById("role").value = "";
+    document.getElementById("staffId").value = "";
+    document.getElementById("staffName").value = "";
+    document.getElementById("position").value = "";
     document.getElementById("status").value = "Active";
+}
+
+function filterStaff(){
+
+    const input =
+        document.getElementById("search")
+        .value
+        .toUpperCase();
+
+    const rows =
+        document.querySelectorAll("#staffTable tbody tr");
+
+    rows.forEach(row => {
+
+        const text =
+            row.innerText.toUpperCase();
+
+        row.style.display =
+            text.includes(input)
+            ? ""
+            : "none";
+
+    });
 }
 </script>
 
