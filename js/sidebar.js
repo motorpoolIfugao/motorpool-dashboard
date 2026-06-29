@@ -32,6 +32,11 @@
             roles: ["Admin"]
         },
         {
+            title: "User Management",
+            href: "user-management.html",
+            roles: ["Admin"]
+        },
+        {
             title: "Vehicle Monitoring",
             href: "vehicles.html",
             roles: ["Admin", "Supervisor"]

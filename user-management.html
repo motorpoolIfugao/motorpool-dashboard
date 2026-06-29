@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>User Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
+
+<style>
+.user-card{
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+    margin-bottom:22px;
+}
+
+.user-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    font-weight:bold;
+    margin-bottom:6px;
+    color:#1f2933;
+}
+
+input,
+select{
+    padding:11px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    width:100%;
+}
+
+.full{
+    grid-column:span 2;
+}
+
+.button-row{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+    flex-wrap:wrap;
+}
+
+button{
+    padding:11px 14px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.save-btn{
+    background:#0b4f2f;
+    color:white;
+}
+
+.save-btn:hover{
+    background:#083b24;
+}
+
+.clear-btn{
+    background:#6c757d;
+    color:white;
+}
+
+.edit-btn{
+    background:#0d6efd;
+    color:white;
+    padding:7px 10px;
+}
+
+.status-active{
+    color:#198754;
+    font-weight:bold;
+}
+
+.status-inactive{
+    color:#dc3545;
+    font-weight:bold;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:#0b4f2f;
+    color:white;
+    padding:11px;
+    text-transform:uppercase;
+    font-size:13px;
+}
+
+td{
+    border:1px solid #ddd;
+    padding:10px;
+    font-size:14px;
+}
+
+tr:nth-child(even){
+    background:#f9fbfa;
+}
+
+#message{
+    margin-top:15px;
+    font-weight:bold;
+    color:green;
+}
+
+.note{
+    background:#eef7f1;
+    border-left:5px solid #0b4f2f;
+    padding:10px 12px;
+    border-radius:6px;
+    margin-bottom:15px;
+    color:#1f2933;
+}
+
+@media(max-width:700px){
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .full{
+        grid-column:span 1;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="dashboard-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="top-header">
+            <h1>User Management</h1>
+            <p>Add, edit, activate, or deactivate system users.</p>
+        </header>
+
+        <section class="content-area">
+
+            <div class="user-card">
+
+                <h2 id="formTitle">Add New User</h2>
+
+                <div class="note">
+                    Passwords are not displayed in the user list. When editing a user, leave password blank if you do not want to change it.
+                </div>
+
+                <form id="userForm">
+
+                    <input type="hidden" id="rowNumber">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="password" placeholder="Required for new user">
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Full Name</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="role" required>
+                                <option value="">Select Role</option>
+                                <option>Admin</option>
+                                <option>Supervisor</option>
+                                <option>Mechanic</option>
+                                <option>Viewer</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="status" required>
+                                <option>Active</option>
+                                <option>Inactive</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="button-row">
+                        <button type="submit" class="save-btn">
+                            Save User
+                        </button>
+
+                        <button type="button" class="clear-btn" onclick="clearForm()">
+                            Clear Form
+                        </button>
+                    </div>
+
+                </form>
+
+                <div id="message"></div>
+
+            </div>
+
+            <div class="user-card">
+
+                <h2>User List</h2>
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="userBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="js/auth-check.js?v=4"></script>
+
+<script>
+allowRoles(["Admin"]);
+</script>
+
+<script src="js/sidebar.js?v=2"></script>
+
+<script>
+const apiUrl =
+"https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
+
+let users = [];
+
+document
+.getElementById("userForm")
+.addEventListener("submit", saveUser);
+
+loadUsers();
+
+async function loadUsers(){
+
+    const userBody =
+        document.getElementById("userBody");
+
+    userBody.innerHTML = `
+        <tr>
+            <td colspan="5" style="text-align:center;">
+                Loading users...
+            </td>
+        </tr>
+    `;
+
+    try{
+
+        const response =
+            await fetch(apiUrl + "?action=users");
+
+        users =
+            await response.json();
+
+        renderUsers();
+
+    }catch(error){
+
+        console.error(error);
+
+        userBody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center;color:red;">
+                    Error loading users.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function renderUsers(){
+
+    const userBody =
+        document.getElementById("userBody");
+
+    userBody.innerHTML = "";
+
+    if(users.length === 0){
+
+        userBody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center;">
+                    No users found.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    users.forEach(user => {
+
+        const statusClass =
+            user.status === "Active"
+            ? "status-active"
+            : "status-inactive";
+
+        userBody.innerHTML += `
+            <tr>
+                <td>${user.username || ""}</td>
+                <td>${user.fullName || ""}</td>
+                <td>${user.role || ""}</td>
+                <td class="${statusClass}">${user.status || ""}</td>
+                <td>
+                    <button class="edit-btn" onclick="editUser(${user.rowNumber})">
+                        Edit
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function editUser(rowNumber){
+
+    const user =
+        users.find(u => Number(u.rowNumber) === Number(rowNumber));
+
+    if(!user){
+        alert("User not found.");
+        return;
+    }
+
+    document.getElementById("formTitle").innerText =
+        "Edit User";
+
+    document.getElementById("rowNumber").value =
+        user.rowNumber;
+
+    document.getElementById("username").value =
+        user.username || "";
+
+    document.getElementById("password").value =
+        "";
+
+    document.getElementById("password").placeholder =
+        "Leave blank to keep current password";
+
+    document.getElementById("fullName").value =
+        user.fullName || "";
+
+    document.getElementById("role").value =
+        user.role || "";
+
+    document.getElementById("status").value =
+        user.status || "Active";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+async function saveUser(e){
+
+    e.preventDefault();
+
+    const rowNumber =
+        document.getElementById("rowNumber").value;
+
+    const username =
+        document.getElementById("username").value.trim();
+
+    const password =
+        document.getElementById("password").value.trim();
+
+    const fullName =
+        document.getElementById("fullName").value.trim();
+
+    const role =
+        document.getElementById("role").value;
+
+    const status =
+        document.getElementById("status").value;
+
+    const message =
+        document.getElementById("message");
+
+    if(!rowNumber && !password){
+        message.style.color = "red";
+        message.innerText = "Password is required for a new user.";
+        return;
+    }
+
+    const request = {
+        action: rowNumber ? "updateUser" : "createUser",
+        rowNumber: rowNumber,
+        username: username,
+        password: password,
+        fullName: fullName,
+        role: role,
+        status: status
+    };
+
+    try{
+
+        await fetch(apiUrl,{
+            method:"POST",
+            mode:"no-cors",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(request)
+        });
+
+        message.style.color = "green";
+        message.innerText =
+            "User saved. Refreshing list...";
+
+        clearForm();
+
+        setTimeout(loadUsers, 1000);
+
+    }catch(error){
+
+        console.error(error);
+
+        message.style.color = "red";
+        message.innerText =
+            "Error saving user.";
+    }
+}
+
+function clearForm(){
+
+    document.getElementById("formTitle").innerText =
+        "Add New User";
+
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("password").placeholder =
+        "Required for new user";
+    document.getElementById("fullName").value = "";
+    document.getElementById("role").value = "";
+    document.getElementById("status").value = "Active";
+}
+</script>
+
+</body>
+</html>
