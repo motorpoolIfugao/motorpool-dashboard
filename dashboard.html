@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Motorpool Dashboard</title>
-
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
 
 <style>
 
@@ -106,44 +106,71 @@ button:hover{
 
 <body>
 
-<div class="header">
-    <h1>Motorpool Weekly Dashboard</h1>
-
-    <p id="userInfo"></p>
-
-    <button onclick="window.location.href='report.html'">
-    Print Weekly Report
-    </button>
-
-    <button onclick="window.location.href='spare-parts.html'">
-    Spare Parts Monitoring
-    </button>
-
-    <button onclick="window.location.href='vehicles.html'">
-    Vehicle Monitoring
-    </button>
-
-    <button id="adminBtn" onclick="window.location.href='admin.html'">
-    Admin Panel
-    </button>
-
-    <button id="taskManagementBtn" onclick="window.location.href='task-management.html'">
-    Task Management
-    </button>
-
-    <button id="employeeTaskBtn" onclick="window.location.href='employee-task.html'">
-    Submit My Task
-    </button>
-
-    <button id="inventoryBtn" onclick="window.location.href='inventory.html'">
-    Inventory Management
-    </button>
-
-    <button onclick="logout()">
-    Logout
-    </button>
-    
+<div class="gov-topbar">
+    Republic of the Philippines · Province of Ifugao · Provincial Motorpool
 </div>
+
+<header class="gov-header">
+    <div class="gov-header-content">
+
+        <div class="gov-brand">
+            <div class="gov-seal">
+                IFG
+            </div>
+
+            <div class="gov-title">
+                <h1>Motorpool Management System</h1>
+                <p>Weekly Work Plan · Accomplishment Monitoring · Vehicle and Inventory Management</p>
+            </div>
+        </div>
+
+        <div class="gov-user">
+            <p id="userInfo"></p>
+            <button onclick="logout()" class="gov-btn-warning">
+                Logout
+            </button>
+        </div>
+
+    </div>
+</header>
+
+<div class="gov-container">
+
+    <div class="gov-nav">
+
+        <button id="adminBtn" onclick="window.location.href='admin.html'">
+            Admin Panel
+        </button>
+
+        <button id="employeeTaskBtn" onclick="window.location.href='employee-task.html'">
+            Submit My Task
+        </button>
+
+        <button id="taskManagementBtn" onclick="window.location.href='task-management.html'">
+            Task Management
+        </button>
+
+        <button onclick="window.location.href='spare-parts.html'">
+            Spare Parts
+        </button>
+
+        <button onclick="window.location.href='vehicles.html'">
+            Vehicle Monitoring
+        </button>
+
+        <button onclick="window.location.href='inventory.html'">
+            Inventory
+        </button>
+
+        <button onclick="window.location.href='report.html'">
+            Print Report
+        </button>
+
+        <button onclick="window.location.href='boss-dashboard.html'">
+            Boss Dashboard
+        </button>
+
+    </div>
 
 <input
 type="text"
@@ -198,7 +225,7 @@ onkeyup="filterTable()">
 </tbody>
 
 </table>
-
+</div>
 <script src="js/dashboard.js"></script>
 <script src="js/auth-check.js"></script>
 <script src="js/dashboard.js"></script>

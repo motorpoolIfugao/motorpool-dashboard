@@ -1,0 +1,269 @@
+:root{
+    --gov-green:#0b4f2f;
+    --gov-green-dark:#083b24;
+    --gov-gold:#d4af37;
+    --gov-blue:#1f3a5f;
+    --bg:#f3f6f4;
+    --card:#ffffff;
+    --text:#1f2933;
+    --muted:#6b7280;
+    --border:#d9e2dc;
+    --danger:#dc3545;
+    --warning:#f59e0b;
+    --success:#198754;
+    --info:#0d6efd;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+}
+
+.gov-topbar{
+    background:var(--gov-green-dark);
+    color:white;
+    padding:8px 24px;
+    font-size:13px;
+    letter-spacing:.04em;
+}
+
+.gov-header{
+    background:linear-gradient(135deg,var(--gov-green),var(--gov-blue));
+    color:white;
+    padding:22px 28px;
+    border-bottom:5px solid var(--gov-gold);
+}
+
+.gov-header-content{
+    max-width:1300px;
+    margin:auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.gov-brand{
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.gov-seal{
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:white;
+    color:var(--gov-green);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    border:3px solid var(--gov-gold);
+}
+
+.gov-title h1{
+    margin:0;
+    font-size:28px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+
+.gov-title p{
+    margin:4px 0 0;
+    font-size:14px;
+    color:#e8f5ee;
+}
+
+.gov-user{
+    text-align:right;
+    font-size:14px;
+}
+
+.gov-container{
+    max-width:1300px;
+    margin:24px auto;
+    padding:0 20px;
+}
+
+.gov-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.gov-nav{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:18px 0;
+}
+
+button,
+.gov-btn{
+    border:none;
+    background:var(--gov-green);
+    color:white;
+    padding:10px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+button:hover,
+.gov-btn:hover{
+    background:var(--gov-green-dark);
+}
+
+.gov-btn-secondary{
+    background:var(--gov-blue);
+}
+
+.gov-btn-warning{
+    background:var(--warning);
+    color:#111827;
+}
+
+.gov-btn-danger{
+    background:var(--danger);
+}
+
+.gov-btn-light{
+    background:#e5e7eb;
+    color:#111827;
+}
+
+.card-container,
+.summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+    gap:16px;
+    margin:20px 0;
+}
+
+.card{
+    background:white;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px;
+    text-align:center;
+    box-shadow:0 3px 10px rgba(0,0,0,.07);
+    border-top:4px solid var(--gov-green);
+}
+
+.card h2{
+    margin:0;
+    font-size:34px;
+    color:var(--gov-green);
+}
+
+.card p{
+    margin:8px 0 0;
+    color:var(--muted);
+    font-weight:600;
+}
+
+input,
+select,
+textarea{
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:var(--gov-green);
+    color:white;
+    padding:11px;
+    font-size:13px;
+    text-transform:uppercase;
+}
+
+td{
+    border:1px solid #e5e7eb;
+    padding:10px;
+    font-size:14px;
+}
+
+tr:nth-child(even){
+    background:#f9fbfa;
+}
+
+tr:hover{
+    background:#eef7f1;
+}
+
+.status{
+    padding:5px 10px;
+    border-radius:20px;
+    color:white;
+    font-weight:bold;
+    display:inline-block;
+    font-size:12px;
+}
+
+.status.Planned{
+    background:#6c757d;
+}
+
+.status.Ongoing{
+    background:var(--warning);
+    color:#111827;
+}
+
+.status.Finished{
+    background:var(--success);
+}
+
+.status.Delayed{
+    background:var(--danger);
+}
+
+.status.Waiting,
+.status.Waiting-for-Parts{
+    background:var(--info);
+}
+
+.page-title{
+    color:var(--gov-green);
+    margin-bottom:5px;
+}
+
+.page-subtitle{
+    color:var(--muted);
+    margin-top:0;
+}
+
+@media print{
+    .gov-topbar,
+    .gov-nav,
+    button{
+        display:none !important;
+    }
+
+    body{
+        background:white;
+    }
+
+    .gov-card,
+    .card{
+        box-shadow:none;
+    }
+}
