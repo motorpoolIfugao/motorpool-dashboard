@@ -3,28 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <title>Spare Parts Monitoring</title>
-<link rel="stylesheet" href="css/gov-theme.css?v=1">
-<style>
-body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    margin:20px;
-}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.container{
-    max-width:1000px;
-    margin:auto;
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
+
+<style>
+.parts-card{
     background:white;
     padding:25px;
-    border-radius:10px;
-    box-shadow:0 2px 10px rgba(0,0,0,.15);
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-h1{
-    color:#1b5e20;
+.parts-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
 }
 
-form{
+#partsForm{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:15px;
@@ -33,26 +31,32 @@ form{
 
 input,
 select{
-    padding:10px;
+    padding:11px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:6px;
+    width:100%;
 }
 
 button{
     padding:12px;
     border:none;
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
-    border-radius:5px;
+    border-radius:6px;
     cursor:pointer;
+    font-weight:bold;
 }
 
 button:hover{
-    background:#2e7d32;
+    background:#083b24;
 }
 
 .full{
     grid-column:span 2;
+}
+
+.table-wrapper{
+    overflow-x:auto;
 }
 
 table{
@@ -62,8 +66,10 @@ table{
 }
 
 th{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
+    text-transform:uppercase;
+    font-size:13px;
 }
 
 th,td{
@@ -73,9 +79,10 @@ th,td{
 
 .status{
     padding:5px 10px;
-    border-radius:5px;
+    border-radius:20px;
     color:white;
     font-weight:bold;
+    font-size:12px;
 }
 
 .status.Pending{
@@ -89,72 +96,102 @@ th,td{
 .status.Cancelled{
     background:#dc3545;
 }
+
+#message{
+    margin-top:10px;
+    font-weight:bold;
+    color:green;
+}
+
+@media(max-width:700px){
+    #partsForm{
+        grid-template-columns:1fr;
+    }
+
+    .full{
+        grid-column:span 1;
+    }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="dashboard-layout">
 
-<h1>Spare Parts Request Monitoring</h1>
+    <div id="sidebarContainer"></div>
 
-<form id="partsForm">
+    <main class="main-content">
 
-    <input type="date" id="dateRequested" required>
+        <header class="top-header">
+            <h1>Spare Parts Monitoring</h1>
+            <p>Record and monitor requested spare parts for vehicle repair and maintenance.</p>
+        </header>
 
-    <select id="vehicle" required>
-        <option value="">Select Vehicle / Equipment</option>
-    </select>
+        <section class="content-area">
 
-    <input type="text" id="partNeeded" placeholder="Part Needed" required>
+            <div class="parts-card">
 
-    <input type="number" id="quantity" placeholder="Quantity" required>
+                <h2>Spare Parts Request Form</h2>
 
-    <select id="status">
-        <option>Pending</option>
-        <option>Available</option>
-        <option>Cancelled</option>
-    </select>
+                <form id="partsForm">
 
-    <button class="full" type="submit">
-        Save Spare Part Request
-    </button>
+                    <input type="date" id="dateRequested" required>
 
-</form>
+                    <select id="vehicle" required>
+                        <option value="">Select Vehicle / Equipment</option>
+                    </select>
 
-<div id="message"></div>
+                    <input type="text" id="partNeeded" placeholder="Part Needed" required>
 
-<h2>Parts Request List</h2>
+                    <input type="number" id="quantity" placeholder="Quantity" required>
 
-<table>
-<thead>
-<tr>
-    <th>Date Requested</th>
-    <th>Vehicle</th>
-    <th>Part Needed</th>
-    <th>Quantity</th>
-    <th>Status</th>
-</tr>
-</thead>
+                    <select id="status">
+                        <option>Pending</option>
+                        <option>Available</option>
+                        <option>Cancelled</option>
+                    </select>
 
-<tbody id="partsBody">
-</tbody>
-</table>
+                    <button class="full" type="submit">
+                        Save Spare Part Request
+                    </button>
 
-<br>
+                </form>
 
-<button onclick="window.location.href='dashboard.html'">
-    Back to Dashboard
-</button>
+                <div id="message"></div>
+
+                <h2>Parts Request List</h2>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date Requested</th>
+                                <th>Vehicle</th>
+                                <th>Part Needed</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="partsBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-<script src="js/spare-parts.js"></script>
-<script src="js/auth-check.js"></script>
+<script src="js/auth-check.js?v=4"></script>
 <script>
 allowRoles(["Admin", "Supervisor"]);
 </script>
-<script src="js/spare-parts.js"></script>
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/spare-parts.js?v=5"></script>
 
 </body>
 </html>

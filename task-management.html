@@ -3,56 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <title>Task Management</title>
-<link rel="stylesheet" href="css/gov-theme.css?v=1">
-<style>
-body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    margin:20px;
-}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.container{
-    max-width:1200px;
-    margin:auto;
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
+
+<style>
+.management-card{
     background:white;
     padding:25px;
-    border-radius:10px;
-    box-shadow:0 2px 10px rgba(0,0,0,.15);
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-h1{
-    color:#1b5e20;
+.management-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
 }
 
 .search{
-    width:300px;
-    padding:10px;
+    width:320px;
+    max-width:100%;
+    padding:11px;
+    border:1px solid #ccc;
+    border-radius:6px;
     margin-bottom:15px;
+}
+
+.table-wrapper{
+    overflow-x:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
     margin-top:15px;
+    background:white;
 }
 
 th{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
+    text-transform:uppercase;
+    font-size:13px;
 }
 
 th,td{
     border:1px solid #ddd;
-    padding:8px;
+    padding:9px;
     vertical-align:top;
 }
 
-button{
+.edit-btn,
+.delete-btn,
+.save-btn{
     padding:8px 12px;
     border:none;
     border-radius:5px;
     cursor:pointer;
     color:white;
+    font-weight:bold;
 }
 
 .edit-btn{
@@ -63,15 +74,11 @@ button{
     background:#dc3545;
 }
 
-.back-btn{
-    background:#6c757d;
-    margin-top:20px;
-}
-
 .save-btn{
-    background:#198754;
+    background:#0b4f2f;
     width:100%;
     margin-top:15px;
+    padding:12px;
 }
 
 .modal{
@@ -83,15 +90,22 @@ button{
     height:100%;
     background:rgba(0,0,0,.5);
     overflow:auto;
+    z-index:9999;
 }
 
 .modal-content{
     background:white;
     width:90%;
-    max-width:800px;
+    max-width:850px;
     margin:40px auto;
     padding:25px;
-    border-radius:10px;
+    border-radius:12px;
+    border-top:6px solid #d4af37;
+}
+
+.modal-content h2{
+    color:#0b4f2f;
+    margin-top:0;
 }
 
 .form-grid{
@@ -100,12 +114,18 @@ button{
     gap:15px;
 }
 
+label{
+    font-weight:bold;
+    display:block;
+    margin-bottom:6px;
+}
+
 input,
 select,
 textarea{
     padding:10px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:6px;
     width:100%;
 }
 
@@ -120,8 +140,9 @@ textarea{
 
 .close{
     float:right;
-    font-size:24px;
+    font-size:28px;
     cursor:pointer;
+    color:#dc3545;
 }
 
 #message{
@@ -129,137 +150,164 @@ textarea{
     font-weight:bold;
     color:green;
 }
+
+@media(max-width:700px){
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .full{
+        grid-column:span 1;
+    }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="dashboard-layout">
 
-<h1>Task Management</h1>
+    <div id="sidebarContainer"></div>
 
-<input
-    type="text"
-    id="search"
-    class="search"
-    placeholder="Search task..."
-    onkeyup="filterTable()">
+    <main class="main-content">
 
-<table>
-<thead>
-<tr>
-    <th>No.</th>
-    <th>Staff</th>
-    <th>Vehicle</th>
-    <th>Target Activity</th>
-    <th>Status</th>
-    <th>%</th>
-    <th>Action</th>
-</tr>
-</thead>
+        <header class="top-header">
+            <h1>Task Management</h1>
+            <p>Edit, update, or delete weekly work plan records.</p>
+        </header>
 
-<tbody id="taskBody">
-</tbody>
-</table>
+        <section class="content-area">
 
-<button class="back-btn" onclick="window.location.href='dashboard.html'">
-    Back to Dashboard
-</button>
+            <div class="management-card">
 
-<div id="message"></div>
+                <h2>Weekly Task Records</h2>
+
+                <input
+                    type="text"
+                    id="search"
+                    class="search"
+                    placeholder="Search task..."
+                    onkeyup="filterTable()">
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Vehicle</th>
+                                <th>Target Activity</th>
+                                <th>Status</th>
+                                <th>%</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="taskBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="message"></div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
 <div id="editModal" class="modal">
 
-<div class="modal-content">
+    <div class="modal-content">
 
-<span class="close" onclick="closeModal()">&times;</span>
+        <span class="close" onclick="closeModal()">&times;</span>
 
-<h2>Edit Task</h2>
+        <h2>Edit Task</h2>
 
-<div class="form-grid">
+        <div class="form-grid">
 
-    <input type="hidden" id="editNo">
+            <input type="hidden" id="editNo">
 
-    <div>
-        <label>Staff</label>
-        <select id="editStaff"></select>
-    </div>
+            <div>
+                <label>Staff</label>
+                <select id="editStaff"></select>
+            </div>
 
-    <div>
-        <label>Position</label>
-        <input type="text" id="editPosition" readonly>
-    </div>
+            <div>
+                <label>Position</label>
+                <input type="text" id="editPosition" readonly>
+            </div>
 
-    <div>
-        <label>Vehicle / Equipment</label>
-        <select id="editVehicle"></select>
-    </div>
+            <div>
+                <label>Vehicle / Equipment</label>
+                <select id="editVehicle"></select>
+            </div>
 
-    <div>
-        <label>Status</label>
-        <select id="editStatus">
-            <option>Planned</option>
-            <option>Ongoing</option>
-            <option>Finished</option>
-            <option>Delayed</option>
-            <option>Waiting for Parts</option>
-        </select>
-    </div>
+            <div>
+                <label>Status</label>
+                <select id="editStatus">
+                    <option>Planned</option>
+                    <option>Ongoing</option>
+                    <option>Finished</option>
+                    <option>Delayed</option>
+                    <option>Waiting for Parts</option>
+                </select>
+            </div>
 
-    <div>
-        <label>Start Date</label>
-        <input type="date" id="editStartDate">
-    </div>
+            <div>
+                <label>Start Date</label>
+                <input type="date" id="editStartDate">
+            </div>
 
-    <div>
-        <label>Target Completion</label>
-        <input type="date" id="editTargetCompletion">
-    </div>
+            <div>
+                <label>Target Completion</label>
+                <input type="date" id="editTargetCompletion">
+            </div>
 
-    <div>
-        <label>% Completion</label>
-        <select id="editPercent">
-            <option></option>
-            <option>0%</option>
-            <option>25%</option>
-            <option>50%</option>
-            <option>75%</option>
-            <option>100%</option>
-        </select>
-    </div>
+            <div>
+                <label>% Completion</label>
+                <select id="editPercent">
+                    <option></option>
+                    <option>0%</option>
+                    <option>25%</option>
+                    <option>50%</option>
+                    <option>75%</option>
+                    <option>100%</option>
+                </select>
+            </div>
 
-    <div class="full">
-        <label>Target Activity</label>
-        <textarea id="editTarget"></textarea>
-    </div>
+            <div class="full">
+                <label>Target Activity</label>
+                <textarea id="editTarget"></textarea>
+            </div>
 
-    <div class="full">
-        <label>Actual Accomplishment</label>
-        <textarea id="editActual"></textarea>
-    </div>
+            <div class="full">
+                <label>Actual Accomplishment</label>
+                <textarea id="editActual"></textarea>
+            </div>
 
-    <div class="full">
-        <label>Remarks</label>
-        <textarea id="editRemarks"></textarea>
+            <div class="full">
+                <label>Remarks</label>
+                <textarea id="editRemarks"></textarea>
+            </div>
+
+        </div>
+
+        <button class="save-btn" onclick="saveTaskEdit()">
+            Save Changes
+        </button>
+
     </div>
 
 </div>
 
-<button class="save-btn" onclick="saveTaskEdit()">
-    Save Changes
-</button>
-
-</div>
-
-</div>
-
-<script src="js/auth-check.js"></script>
+<script src="js/auth-check.js?v=4"></script>
 <script>
 allowRoles(["Admin"]);
 </script>
-<script src="js/task-management.js"></script>
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/task-management.js?v=5"></script>
 
 </body>
 </html>

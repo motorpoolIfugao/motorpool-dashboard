@@ -3,67 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <title>Motorpool Weekly Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link rel="stylesheet" href="css/gov-theme.css?v=1">
+
 <style>
-body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    margin:20px;
+.report-card{
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-.header{
+.report-header{
     text-align:center;
     margin-bottom:20px;
 }
 
-.header h2,
-.header h3{
+.report-header h2,
+.report-header h3{
     margin:5px;
+}
+
+.report-header h2{
+    color:#0b4f2f;
 }
 
 .controls{
     margin-bottom:20px;
-    background:white;
+    background:#eef7f1;
     padding:15px;
     border-radius:8px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
 }
 
 .controls input,
 .controls button{
     padding:10px;
-    margin-right:10px;
 }
 
 button{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
     border:none;
-    border-radius:5px;
+    border-radius:6px;
     cursor:pointer;
+    font-weight:bold;
 }
 
 button:hover{
-    background:#2e7d32;
+    background:#083b24;
 }
 
 .summary{
     display:grid;
-    grid-template-columns:repeat(6,1fr);
-    gap:10px;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
     margin-bottom:20px;
 }
 
 .card{
     background:white;
     padding:15px;
-    border-radius:8px;
+    border-radius:10px;
     text-align:center;
     box-shadow:0 2px 5px rgba(0,0,0,.1);
+    border-top:4px solid #0b4f2f;
 }
 
 .card h2{
     margin:0;
-    color:#1b5e20;
+    color:#0b4f2f;
+}
+
+.card p{
+    margin:8px 0 0;
+    font-weight:bold;
+    color:#6b7280;
+}
+
+.table-wrapper{
+    overflow-x:auto;
 }
 
 table{
@@ -74,8 +98,10 @@ table{
 }
 
 th{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
+    text-transform:uppercase;
+    font-size:12px;
 }
 
 th,td{
@@ -86,10 +112,11 @@ th,td{
 
 .status{
     padding:4px 8px;
-    border-radius:5px;
+    border-radius:20px;
     color:white;
     font-weight:bold;
     display:inline-block;
+    font-size:12px;
 }
 
 .status.Planned{
@@ -138,13 +165,29 @@ th,td{
 
 @media print{
 
+    .sidebar,
+    .top-header,
+    .controls{
+        display:none !important;
+    }
+
+    .main-content{
+        margin-left:0 !important;
+    }
+
+    .content-area{
+        padding:0 !important;
+    }
+
     body{
         background:white;
         margin:10px;
     }
 
-    .controls{
-        display:none;
+    .report-card{
+        box-shadow:none;
+        border:none;
+        padding:0;
     }
 
     button{
@@ -165,110 +208,130 @@ th,td{
 
 <body>
 
-<div class="header">
-    <h2>PROVINCIAL MOTORPOOL</h2>
-    <h3>Weekly Work Plan and Accomplishment Report</h3>
-    <p id="reportPeriod"></p>
+<div class="dashboard-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="top-header">
+            <h1>Weekly Report</h1>
+            <p>Generate, print, and export weekly work plan and accomplishment reports.</p>
+        </header>
+
+        <section class="content-area">
+
+            <div class="report-card">
+
+                <div class="report-header">
+                    <h2>PROVINCIAL MOTORPOOL</h2>
+                    <h3>Weekly Work Plan and Accomplishment Report</h3>
+                    <p id="reportPeriod"></p>
+                </div>
+
+                <div class="controls">
+                    <label>From:</label>
+                    <input type="date" id="fromDate">
+
+                    <label>To:</label>
+                    <input type="date" id="toDate">
+
+                    <button onclick="loadReport()">Generate Report</button>
+
+                    <button onclick="window.print()">Print Report</button>
+
+                    <button onclick="downloadExcel()">Download Excel</button>
+                </div>
+
+                <div class="summary">
+
+                    <div class="card">
+                        <h2 id="totalTasks">0</h2>
+                        <p>Total Tasks</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="finishedTasks">0</h2>
+                        <p>Finished</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="ongoingTasks">0</h2>
+                        <p>Ongoing</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="delayedTasks">0</h2>
+                        <p>Delayed</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="waitingTasks">0</h2>
+                        <p>Waiting Parts</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="completionRate">0%</h2>
+                        <p>Completion Rate</p>
+                    </div>
+
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Position</th>
+                                <th>Vehicle/Equipment</th>
+                                <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
+                                <th>Actual Accomplishment</th>
+                                <th>Status</th>
+                                <th>% Completion</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="reportBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="print-footer">
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Prepared by</div>
+                    </div>
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Checked by</div>
+                    </div>
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Approved by</div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
 </div>
 
-<div class="controls">
-    <label>From:</label>
-    <input type="date" id="fromDate">
-
-    <label>To:</label>
-    <input type="date" id="toDate">
-
-    <button onclick="loadReport()">Generate Report</button>
-
-    <button onclick="window.print()">Print Report</button>
-
-    <button onclick="downloadExcel()">Download Excel</button>
-
-    <button onclick="window.location.href='dashboard.html'">
-        Back to Dashboard
-    </button>
-</div>
-
-<div class="summary">
-
-    <div class="card">
-        <h2 id="totalTasks">0</h2>
-        <p>Total Tasks</p>
-    </div>
-
-    <div class="card">
-        <h2 id="finishedTasks">0</h2>
-        <p>Finished</p>
-    </div>
-
-    <div class="card">
-        <h2 id="ongoingTasks">0</h2>
-        <p>Ongoing</p>
-    </div>
-
-    <div class="card">
-        <h2 id="delayedTasks">0</h2>
-        <p>Delayed</p>
-    </div>
-
-    <div class="card">
-        <h2 id="waitingTasks">0</h2>
-        <p>Waiting Parts</p>
-    </div>
-
-    <div class="card">
-        <h2 id="completionRate">0%</h2>
-        <p>Completion Rate</p>
-    </div>
-
-</div>
-
-<table>
-<thead>
-<tr>
-    <th>No.</th>
-    <th>Staff</th>
-    <th>Position</th>
-    <th>Vehicle/Equipment</th>
-    <th>Target Activity</th>
-    <th>Start Date</th>
-    <th>Target Completion</th>
-    <th>Actual Accomplishment</th>
-    <th>Status</th>
-    <th>% Completion</th>
-    <th>Remarks</th>
-</tr>
-</thead>
-
-<tbody id="reportBody">
-</tbody>
-</table>
-
-<div class="print-footer">
-
-    <div class="signature-box">
-        <div class="signature-line"></div>
-        <div class="signature-title">Prepared by</div>
-    </div>
-
-    <div class="signature-box">
-        <div class="signature-line"></div>
-        <div class="signature-title">Checked by</div>
-    </div>
-
-    <div class="signature-box">
-        <div class="signature-line"></div>
-        <div class="signature-title">Approved by</div>
-    </div>
-
-</div>
-
-<script src="js/report.js"></script>
-<script src="js/auth-check.js"></script>
+<script src="js/auth-check.js?v=4"></script>
 <script>
-allowRoles(["Admin", "Supervisor"]);
+allowRoles(["Admin", "Supervisor", "Viewer"]);
 </script>
-<script src="js/report.js"></script>
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/report.js?v=5"></script>
 
 </body>
 </html>
