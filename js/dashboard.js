@@ -1,6 +1,12 @@
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
+const role = localStorage.getItem("role");
+
+if(role !== "Admin" && role !== "Supervisor"){
+    document.getElementById("inventoryBtn").style.display = "none";
+}
+
 if(localStorage.getItem("role") !== "Admin"){
     document.getElementById("taskManagementBtn").style.display = "none";
 }
