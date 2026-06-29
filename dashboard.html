@@ -6,228 +6,414 @@
 <link rel="stylesheet" href="css/gov-theme.css?v=1">
 
 <style>
-
 body{
-    font-family:Arial,sans-serif;
-    background:#f4f6f9;
-    margin:20px;
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f3f6f4;
 }
 
-.header{
+.dashboard-layout{
+    display:flex;
+    min-height:100vh;
+}
+
+.sidebar{
+    width:250px;
+    background:#083b24;
+    color:white;
+    padding:20px 0;
+    position:fixed;
+    top:0;
+    bottom:0;
+    left:0;
+}
+
+.sidebar-header{
+    text-align:center;
+    padding:0 20px 20px;
+    border-bottom:1px solid rgba(255,255,255,.2);
+}
+
+.sidebar-seal{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:white;
+    color:#0b4f2f;
+    border:4px solid #d4af37;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    font-size:20px;
+    margin:0 auto 10px;
+}
+
+.sidebar-header h2{
+    font-size:16px;
+    margin:0;
+    text-transform:uppercase;
+}
+
+.sidebar-header p{
+    font-size:12px;
+    color:#d6eadf;
+    margin:5px 0 0;
+}
+
+.sidebar-menu{
+    padding:20px 12px;
+}
+
+.sidebar-menu button{
+    width:100%;
+    text-align:left;
+    margin-bottom:8px;
+    background:transparent;
+    color:white;
+    border:none;
+    padding:11px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.sidebar-menu button:hover{
+    background:rgba(255,255,255,.12);
+}
+
+.sidebar-menu .active{
+    background:#d4af37;
+    color:#102418;
+}
+
+.main-content{
+    margin-left:250px;
+    flex:1;
+}
+
+.top-header{
+    background:linear-gradient(135deg,#0b4f2f,#1f3a5f);
+    color:white;
+    padding:18px 26px;
+    border-bottom:5px solid #d4af37;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+}
+
+.top-header h1{
+    margin:0;
+    font-size:24px;
+    text-transform:uppercase;
+}
+
+.top-header p{
+    margin:5px 0 0;
+    color:#e8f5ee;
+    font-size:13px;
+}
+
+.user-box{
+    text-align:right;
+    font-size:14px;
+}
+
+.logout-btn{
+    background:#f59e0b;
+    color:#111827;
+    border:none;
+    padding:9px 14px;
+    border-radius:6px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.content-area{
+    padding:24px;
+}
+
+.search{
+    width:320px;
+    max-width:100%;
+    padding:11px;
+    border:1px solid #d9e2dc;
+    border-radius:8px;
+    margin-bottom:18px;
+}
+
+.card-container{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:16px;
+    margin-bottom:22px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    border:1px solid #d9e2dc;
+    border-top:5px solid #0b4f2f;
+    box-shadow:0 4px 12px rgba(0,0,0,.07);
+}
+
+.card h2{
+    margin:0;
+    font-size:34px;
+    color:#0b4f2f;
+}
+
+.card p{
+    margin:8px 0 0;
+    font-weight:bold;
+    color:#6b7280;
+}
+
+.table-card{
+    background:white;
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.07);
+    overflow:hidden;
+}
+
+.table-header{
+    padding:16px 20px;
+    border-bottom:1px solid #d9e2dc;
     display:flex;
     justify-content:space-between;
     align-items:center;
 }
 
-.card-container{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:15px;
-    margin:20px 0;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    text-align:center;
-    box-shadow:0 2px 5px rgba(0,0,0,.1);
-}
-
-.card h2{
+.table-header h2{
     margin:0;
+    color:#0b4f2f;
+    font-size:20px;
+}
+
+.table-wrapper{
+    overflow-x:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
-    background:white;
 }
 
 th{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
+    padding:11px;
+    font-size:13px;
+    text-transform:uppercase;
+    white-space:nowrap;
 }
 
-th,td{
+td{
+    border:1px solid #e5e7eb;
     padding:10px;
-    border:1px solid #ddd;
+    font-size:14px;
+}
+
+tr:nth-child(even){
+    background:#f9fbfa;
 }
 
 tr:hover{
-    background:#f2f2f2;
-}
-
-.search{
-    width:300px;
-    padding:10px;
-    margin-bottom:15px;
+    background:#eef7f1;
 }
 
 .status{
     padding:5px 10px;
-    border-radius:5px;
+    border-radius:20px;
     color:white;
     font-weight:bold;
+    font-size:12px;
+    display:inline-block;
 }
 
-.status.Planned{
-    background:#6c757d;
-}
+.status.Planned{ background:#6c757d; }
+.status.Ongoing{ background:#fd7e14; }
+.status.Finished{ background:#198754; }
+.status.Delayed{ background:#dc3545; }
+.status.Waiting-for-Parts{ background:#0d6efd; }
 
-.status.Ongoing{
-    background:#fd7e14;
-}
+@media(max-width:850px){
+    .sidebar{
+        position:relative;
+        width:100%;
+    }
 
-.status.Finished{
-    background:#198754;
-}
+    .dashboard-layout{
+        flex-direction:column;
+    }
 
-.status.Delayed{
-    background:#dc3545;
-}
+    .main-content{
+        margin-left:0;
+    }
 
-button{
-    background:#0d6efd;
-    color:white;
-    border:none;
-    padding:8px 12px;
-    border-radius:5px;
-    cursor:pointer;
-}
+    .top-header{
+        flex-direction:column;
+        align-items:flex-start;
+    }
 
-button:hover{
-    opacity:.9;
+    .user-box{
+        text-align:left;
+    }
 }
-
 </style>
 
 </head>
 
 <body>
 
-<div class="gov-topbar">
-    Republic of the Philippines · Province of Ifugao · Provincial Motorpool
-</div>
+<div class="dashboard-layout">
 
-<header class="gov-header">
-    <div class="gov-header-content">
+    <aside class="sidebar">
 
-        <div class="gov-brand">
-            <div class="gov-seal">
-                IFG
-            </div>
+        <div class="sidebar-header">
+            <div class="sidebar-seal">IFG</div>
+            <h2>Motorpool System</h2>
+            <p>Province of Ifugao</p>
+        </div>
 
-            <div class="gov-title">
-                <h1>Motorpool Management System</h1>
+        <div class="sidebar-menu">
+
+            <button class="active" onclick="window.location.href='dashboard.html'">
+                Dashboard
+            </button>
+
+            <button id="adminBtn" onclick="window.location.href='admin.html'">
+                Admin Panel
+            </button>
+
+            <button id="employeeTaskBtn" onclick="window.location.href='employee-task.html'">
+                Submit My Task
+            </button>
+
+            <button id="taskManagementBtn" onclick="window.location.href='task-management.html'">
+                Task Management
+            </button>
+
+            <button onclick="window.location.href='vehicles.html'">
+                Vehicle Monitoring
+            </button>
+
+            <button onclick="window.location.href='spare-parts.html'">
+                Spare Parts
+            </button>
+
+            <button onclick="window.location.href='inventory.html'">
+                Inventory
+            </button>
+
+            <button onclick="window.location.href='report.html'">
+                Reports
+            </button>
+
+            <button onclick="window.location.href='boss-dashboard.html'">
+                Boss Dashboard
+            </button>
+
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <header class="top-header">
+
+            <div>
+                <h1>Motorpool Management Dashboard</h1>
                 <p>Weekly Work Plan · Accomplishment Monitoring · Vehicle and Inventory Management</p>
             </div>
-        </div>
 
-        <div class="gov-user">
-            <p id="userInfo"></p>
-            <button onclick="logout()" class="gov-btn-warning">
-                Logout
-            </button>
-        </div>
+            <div class="user-box">
+                <p id="userInfo"></p>
+                <button onclick="logout()" class="logout-btn">
+                    Logout
+                </button>
+            </div>
 
-    </div>
-</header>
+        </header>
 
-<div class="gov-container">
+        <section class="content-area">
 
-    <div class="gov-nav">
+            <input
+                type="text"
+                id="search"
+                class="search"
+                placeholder="Search staff..."
+                onkeyup="filterTable()">
 
-        <button id="adminBtn" onclick="window.location.href='admin.html'">
-            Admin Panel
-        </button>
+            <div class="card-container">
 
-        <button id="employeeTaskBtn" onclick="window.location.href='employee-task.html'">
-            Submit My Task
-        </button>
+                <div class="card">
+                    <h2 id="totalTasks">0</h2>
+                    <p>Total Tasks</p>
+                </div>
 
-        <button id="taskManagementBtn" onclick="window.location.href='task-management.html'">
-            Task Management
-        </button>
+                <div class="card">
+                    <h2 id="plannedTasks">0</h2>
+                    <p>Planned</p>
+                </div>
 
-        <button onclick="window.location.href='spare-parts.html'">
-            Spare Parts
-        </button>
+                <div class="card">
+                    <h2 id="ongoingTasks">0</h2>
+                    <p>Ongoing</p>
+                </div>
 
-        <button onclick="window.location.href='vehicles.html'">
-            Vehicle Monitoring
-        </button>
+                <div class="card">
+                    <h2 id="finishedTasks">0</h2>
+                    <p>Finished</p>
+                </div>
 
-        <button onclick="window.location.href='inventory.html'">
-            Inventory
-        </button>
+            </div>
 
-        <button onclick="window.location.href='report.html'">
-            Print Report
-        </button>
+            <div class="table-card">
 
-        <button onclick="window.location.href='boss-dashboard.html'">
-            Boss Dashboard
-        </button>
+                <div class="table-header">
+                    <h2>Weekly Work Plan</h2>
+                </div>
 
-    </div>
+                <div class="table-wrapper">
 
-<input
-type="text"
-id="search"
-class="search"
-placeholder="Search Staff..."
-onkeyup="filterTable()">
+                    <table id="taskTable">
 
-<div class="card-container">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Position</th>
+                                <th>Vehicle</th>
+                                <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
+                                <th>Status</th>
+                                <th>% Completion</th>
+                                <th>Remarks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
 
-    <div class="card">
-        <h2 id="totalTasks">0</h2>
-        <p>Total Tasks</p>
-    </div>
+                        <tbody id="tableBody"></tbody>
 
-    <div class="card">
-        <h2 id="plannedTasks">0</h2>
-        <p>Planned</p>
-    </div>
+                    </table>
 
-    <div class="card">
-        <h2 id="ongoingTasks">0</h2>
-        <p>Ongoing</p>
-    </div>
+                </div>
 
-    <div class="card">
-        <h2 id="finishedTasks">0</h2>
-        <p>Finished</p>
-    </div>
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-<table id="taskTable">
-
-<thead>
-<tr>
-<th>No.</th>
-<th>Staff</th>
-<th>Position</th>
-<th>Vehicle</th>
-<th>Target Activity</th>
-<th>Start Date</th>
-<th>Target Completion</th>
-<th>Status</th>
-<th>% Completion</th>
-<th>Remarks</th>
-<th>Action</th>
-</tr>
-</thead>
-
-<tbody id="tableBody">
-</tbody>
-
-</table>
-</div>
-<script src="js/auth-check.js?v=2"></script>
-<script src="js/dashboard.js?v=2"></script>
+<script src="js/auth-check.js?v=3"></script>
+<script src="js/dashboard.js?v=3"></script>
 
 </body>
 </html>
