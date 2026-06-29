@@ -3,41 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <title>My Task Entry</title>
-<link rel="stylesheet" href="css/gov-theme.css?v=1">
-<style>
-body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    margin:20px;
-}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.container{
-    max-width:800px;
-    margin:auto;
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
+
+<style>
+.form-card{
+    max-width:850px;
     background:white;
     padding:25px;
-    border-radius:10px;
-    box-shadow:0 2px 10px rgba(0,0,0,.15);
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-h1{
-    color:#1b5e20;
+.form-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
+}
+
+.page-user{
+    background:#eef7f1;
+    border-left:5px solid #0b4f2f;
+    padding:10px 12px;
+    border-radius:6px;
+    color:#1f2933;
+    font-weight:bold;
+}
+
+#employeeTaskForm{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group.full{
+    grid-column:span 2;
 }
 
 label{
     font-weight:bold;
-    display:block;
-    margin-top:12px;
+    margin-bottom:6px;
+    color:#1f2933;
 }
 
 input,
 select,
 textarea{
     width:100%;
-    padding:10px;
-    margin-top:5px;
+    padding:11px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:6px;
 }
 
 textarea{
@@ -45,20 +68,20 @@ textarea{
     resize:vertical;
 }
 
-button{
-    width:100%;
+.submit-btn{
+    grid-column:span 2;
     padding:12px;
-    margin-top:18px;
     border:none;
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
-    border-radius:5px;
+    border-radius:6px;
     cursor:pointer;
     font-size:16px;
+    font-weight:bold;
 }
 
-.back-btn{
-    background:#6c757d;
+.submit-btn:hover{
+    background:#083b24;
 }
 
 #message{
@@ -66,63 +89,108 @@ button{
     font-weight:bold;
     color:green;
 }
+
+@media(max-width:700px){
+    #employeeTaskForm{
+        grid-template-columns:1fr;
+    }
+
+    .form-group.full,
+    .submit-btn{
+        grid-column:span 1;
+    }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="dashboard-layout">
 
-<h1>Submit My Weekly Task</h1>
+    <div id="sidebarContainer"></div>
 
-<p id="userInfo"></p>
+    <main class="main-content">
 
-<form id="employeeTaskForm">
+        <header class="top-header">
+            <h1>Submit My Task</h1>
+            <p>Submit your weekly target activity for monitoring and reporting.</p>
+        </header>
 
-    <label>Staff Name</label>
-    <input type="text" id="staff" readonly>
+        <section class="content-area">
 
-    <label>Position</label>
-    <input type="text" id="position" readonly>
+            <div class="form-card">
 
-    <label>Vehicle / Equipment</label>
-    <select id="vehicle" required>
-        <option value="">Select Vehicle / Equipment</option>
-    </select>
+                <h2>My Weekly Task Entry</h2>
 
-    <label>Target Activity</label>
-    <textarea id="target" placeholder="Enter your target activity for the week..." required></textarea>
+                <p id="userInfo" class="page-user"></p>
 
-    <label>Start Date</label>
-    <input type="date" id="startDate" required>
+                <form id="employeeTaskForm">
 
-    <label>Target Completion</label>
-    <input type="date" id="targetCompletion" required>
+                    <div class="form-group">
+                        <label>Staff Name</label>
+                        <input type="text" id="staff" readonly>
+                    </div>
 
-    <label>Status</label>
-    <select id="status">
-        <option>Planned</option>
-        <option>Ongoing</option>
-    </select>
+                    <div class="form-group">
+                        <label>Position</label>
+                        <input type="text" id="position" readonly>
+                    </div>
 
-    <button type="submit">
-        Submit Task
-    </button>
+                    <div class="form-group full">
+                        <label>Vehicle / Equipment</label>
+                        <select id="vehicle" required>
+                            <option value="">Select Vehicle / Equipment</option>
+                        </select>
+                    </div>
 
-</form>
+                    <div class="form-group full">
+                        <label>Target Activity</label>
+                        <textarea id="target" placeholder="Enter your target activity for the week..." required></textarea>
+                    </div>
 
-<button class="back-btn" onclick="window.location.href='dashboard.html'">
-    Back to Dashboard
-</button>
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDate" required>
+                    </div>
 
-<div id="message"></div>
+                    <div class="form-group">
+                        <label>Target Completion</label>
+                        <input type="date" id="targetCompletion" required>
+                    </div>
+
+                    <div class="form-group full">
+                        <label>Status</label>
+                        <select id="status">
+                            <option>Planned</option>
+                            <option>Ongoing</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        Submit Task
+                    </button>
+
+                </form>
+
+                <div id="message"></div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-<script src="js/auth-check.js"></script>
+<script src="js/auth-check.js?v=4"></script>
+
 <script>
 allowRoles(["Admin", "Supervisor", "Mechanic"]);
+</script>
 
+<script src="js/sidebar.js?v=1"></script>
+
+<script>
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
