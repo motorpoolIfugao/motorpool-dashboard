@@ -1,67 +1,62 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="css/gov-theme.css?v=1">
+
 <title>Motorpool Admin Panel</title>
 
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/gov-theme.css?v=1">
 
 <style>
-
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f6f9;
-}
-
-.main{
-    width:90%;
+.form-card{
     max-width:900px;
-    margin:30px auto;
     background:white;
     padding:25px;
-    border-radius:10px;
-    box-shadow:0 2px 10px rgba(0,0,0,.2);
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-h1{
-    margin-bottom:20px;
-    color:#1b5e20;
+.form-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
 }
 
-form{
+#taskForm{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:15px;
 }
 
-input,
-select,
-textarea{
-    padding:10px;
+#taskForm input,
+#taskForm select,
+#taskForm textarea{
+    padding:11px;
     border:1px solid #ccc;
-    border-radius:5px;
+    border-radius:6px;
+    width:100%;
 }
 
-textarea{
+#taskForm textarea{
     grid-column:span 2;
     resize:vertical;
 }
 
-button{
+#taskForm button{
     grid-column:span 2;
     padding:12px;
     border:none;
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
-    border-radius:5px;
+    border-radius:6px;
     cursor:pointer;
+    font-weight:bold;
 }
 
-button:hover{
-    background:#2e7d32;
+#taskForm button:hover{
+    background:#083b24;
 }
 
 #message{
@@ -70,72 +65,103 @@ button:hover{
     color:green;
 }
 
+@media(max-width:700px){
+    #taskForm{
+        grid-template-columns:1fr;
+    }
+
+    #taskForm textarea,
+    #taskForm button{
+        grid-column:span 1;
+    }
+}
 </style>
 
 </head>
+
 <body>
 
-<div class="main">
+<div class="dashboard-layout">
 
-<h1>Add Weekly Work Plan</h1>
+    <div id="sidebarContainer"></div>
 
-<form id="taskForm">
+    <main class="main-content">
 
-<select id="staff" required>
-    <option value="">Select Staff</option>
-</select>
+        <header class="top-header">
+            <h1>Admin Panel</h1>
+            <p>Create weekly work plan tasks for motorpool personnel.</p>
+        </header>
 
-<input
-    type="text"
-    id="position"
-    placeholder="Position"
-    readonly>
+        <section class="content-area">
 
-<select id="vehicle" required>
-    <option value="">Select Vehicle / Equipment</option>
-</select>
+            <div class="form-card">
 
-<select id="status">
-    <option>Planned</option>
-    <option>Ongoing</option>
-    <option>Finished</option>
-    <option>Delayed</option>
-    <option>Waiting for Parts</option>
-</select>
+                <h2>Add Weekly Work Plan</h2>
 
-<input
-    type="date"
-    id="startDate"
-    required>
+                <form id="taskForm">
 
-<input
-    type="date"
-    id="targetCompletion"
-    required>
+                    <select id="staff" required>
+                        <option value="">Select Staff</option>
+                    </select>
 
-<textarea
-    id="target"
-    rows="4"
-    placeholder="Target Activity"
-    required></textarea>
+                    <input
+                        type="text"
+                        id="position"
+                        placeholder="Position"
+                        readonly>
 
-<button type="submit">
-    Save Task
-</button>
+                    <select id="vehicle" required>
+                        <option value="">Select Vehicle / Equipment</option>
+                    </select>
 
+                    <select id="status">
+                        <option>Planned</option>
+                        <option>Ongoing</option>
+                        <option>Finished</option>
+                        <option>Delayed</option>
+                        <option>Waiting for Parts</option>
+                    </select>
 
-</form>
+                    <input
+                        type="date"
+                        id="startDate"
+                        required>
 
-<div id="message"></div>
+                    <input
+                        type="date"
+                        id="targetCompletion"
+                        required>
+
+                    <textarea
+                        id="target"
+                        rows="4"
+                        placeholder="Target Activity"
+                        required></textarea>
+
+                    <button type="submit">
+                        Save Task
+                    </button>
+
+                </form>
+
+                <div id="message"></div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-<script src="js/admin.js"></script>
-<script src="js/auth-check.js"></script>
+<script src="js/auth-check.js?v=4"></script>
+
 <script>
 allowRoles(["Admin"]);
 </script>
-<script src="js/admin.js"></script>
+
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/admin.js?v=5"></script>
 
 </body>
 </html>
