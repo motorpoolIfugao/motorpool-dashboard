@@ -1,50 +1,53 @@
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-async function login(){
+document.getElementById("loginForm").addEventListener("submit", async function(e){
 
-    const username =
-        document.getElementById("username").value.trim();
+    e.preventDefault();
 
-    const password =
-        document.getElementById("password").value.trim();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const message = document.getElementById("message");
 
-    if(!username || !password){
-        document.getElementById("message").innerHTML =
-            "Please enter username and password.";
-        return;
-    }
+    message.style.color = "#0b4f2f";
+    message.innerText = "Logging in...";
 
     try{
 
         const response = await fetch(
             apiUrl +
-            "?action=login" +
-            "&username=" + encodeURIComponent(username) +
-            "&password=" + encodeURIComponent(password)
+            "?action=login&username=" +
+            encodeURIComponent(username) +
+            "&password=" +
+            encodeURIComponent(password)
         );
 
-        const result = await response.json();
+        const data = await response.json();
 
-        if(result.success){
+        console.log("Login response:", data);
+
+        if(data.success === true){
 
             localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("fullName", result.fullName);
-            localStorage.setItem("role", result.role);
+            localStorage.setItem("fullName", data.fullName);
+            localStorage.setItem("role", data.role);
 
             window.location.href = "dashboard.html";
 
         }else{
 
-            document.getElementById("message").innerHTML =
-                result.message || "Invalid login.";
+            message.style.color = "#dc3545";
+            message.innerText = data.message || "Invalid username or password.";
+
         }
 
     }catch(error){
 
-        console.error(error);
+        console.error("Login error:", error);
 
-        document.getElementById("message").innerHTML =
-            "Login error. Please try again.";
+        message.style.color = "#dc3545";
+        message.innerText = "Login failed. Please check your internet or Apps Script URL.";
+
     }
-}
+
+});
