@@ -52,7 +52,7 @@
             roles: ["Admin", "Supervisor", "Viewer"]
         },
         {
-            title: "Boss Dashboard",
+            title: "Supervisor Dashboard",
             href: "boss-dashboard.html",
             roles: ["Admin", "Supervisor", "Viewer"]
         }
