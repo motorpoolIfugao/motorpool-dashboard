@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIMS — Motorpool Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --ink:#20262B; --steel:#39424A; --muted:#6B747B;
+  --paper:#EDEFEA; --card:#FFFFFF; --line:#D7DCD5;
+  --safety:#E8650D; --safety-dk:#C4540A;
+  --ok:#2E7D4F; --ok-bg:#E3F0E8;
+  --warn:#B7791F; --warn-bg:#F8EFDD;
+  --out:#C03B2B; --out-bg:#F8E5E2;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{font-family:'Barlow',sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.45}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px}
+:focus-visible{outline:3px solid var(--safety);outline-offset:1px}
+
+/* ---------- masthead: equipment data-plate ---------- */
+.plate{background:var(--ink);color:#F2F4F1;position:relative}
+.plate-inner{max-width:1280px;margin:0 auto;padding:18px 24px 16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.plate-id{display:flex;flex-direction:column;flex:1;min-width:240px}
+.plate-agency{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A8B2AC}
+.plate-title{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:.02em;text-transform:uppercase;line-height:1.05}
+.plate-title span{color:var(--safety)}
+.plate-sub{font-size:13px;color:#C4CCC6;margin-top:2px}
+.plate-actions{display:flex;gap:10px;align-items:center}
+.btn{border:none;border-radius:4px;padding:10px 18px;font-weight:600;font-size:14px;letter-spacing:.02em;transition:filter .15s, transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn-safety{background:var(--safety);color:#fff}
+.btn-safety:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;color:#E8ECE7;border:1px solid #56616A}
+.btn-ghost:hover{border-color:#8a949b}
+.btn-steel{background:var(--steel);color:#fff}
+.btn-quiet{background:#E5E9E2;color:var(--ink)}
+.btn-danger{background:var(--out);color:#fff}
+.hazard{height:10px;background:repeating-linear-gradient(135deg,var(--safety) 0 16px,var(--ink) 16px 32px)}
+
+.mode-tag{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:3px;letter-spacing:.08em}
+.mode-demo{background:#3d3325;color:#F0C36D;border:1px solid #6b5a36}
+.mode-live{background:#1f3a2c;color:#7FD6A4;border:1px solid #2E7D4F}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1280px;margin:0 auto;padding:22px 24px 60px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 16px;border-top:3px solid var(--steel)}
+.stat.s-ok{border-top-color:var(--ok)} .stat.s-warn{border-top-color:var(--warn)} .stat.s-out{border-top-color:var(--out)} .stat.s-total{border-top-color:var(--safety)}
+.stat .num{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:32px;line-height:1}
+.stat .lbl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:4px}
+
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{flex:1;min-width:240px;position:relative}
+.search input{width:100%;padding:11px 14px 11px 40px;border:1px solid var(--line);border-radius:5px;background:var(--card);font-size:15px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12px;letter-spacing:.05em;padding:7px 12px;border-radius:3px;border:1px solid var(--line);background:var(--card);color:var(--steel)}
+.chip .ct{color:var(--muted);font-size:10px;margin-left:4px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on .ct{color:var(--safety)}
+
+.grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+
+/* ---------- table ---------- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.panel-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panel-head h2{font-family:'Saira Condensed',sans-serif;font-size:19px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.panel-head .meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);text-align:left;padding:9px 12px;background:#F6F8F4;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0}
+td{padding:9px 12px;border-bottom:1px solid #ECEFE9;vertical-align:top}
+tr:hover td{background:#FAFBF8}
+.code-tag{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 7px;border-radius:2px;background:var(--ink);color:#fff;letter-spacing:.06em;white-space:nowrap}
+.code-SP1{background:#3E5C76}.code-ES2{background:#7A4E8C}.code-VS3{background:#3E7068}.code-VL4{background:#8C6230}.code-TF5{background:#5B5B66}.code-TOOLS{background:#705540}.code-MACHINES{background:#54452F}
+.item-name{font-weight:600}
+.item-part{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.num-cell{font-family:var(--mono);font-size:13px;text-align:right;white-space:nowrap}
+.badge{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.05em;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.b-ok{background:var(--ok-bg);color:var(--ok)} .b-warn{background:var(--warn-bg);color:var(--warn)} .b-out{background:var(--out-bg);color:var(--out)}
+.b-rep{background:#F4E3D6;color:#A14E0A;border:1px dashed #D89B5F}
+.stat.s-rep{border-top-color:#A14E0A}
+.cell-dim{color:var(--muted);font-size:12.5px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.row-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:172px}
+.mini{font-size:11.5px;font-weight:600;padding:6px 6px;border-radius:3px;border:1px solid var(--line);background:#fff;color:var(--steel);white-space:nowrap;text-align:center}
+.mini:hover{background:#F2F4EF}
+.mini.m-out{color:var(--out);border-color:#E5C0BA}
+.mini.m-in{color:var(--ok);border-color:#BFD9CA}
+.mini.m-wide{grid-column:1 / -1}
+th.actions-th, td.actions-cell{position:sticky;right:0;z-index:1;background:#fff;box-shadow:-8px 0 10px -8px rgba(0,0,0,.22);min-width:190px}
+th.actions-th{background:#F6F8F4;z-index:3}
+tr:hover td.actions-cell{background:#FAFBF8}
+
+/* ---------- activity feed ---------- */
+.feed{max-height:680px;overflow-y:auto}
+.tx{padding:11px 16px;border-bottom:1px solid #ECEFE9;display:flex;gap:10px}
+.tx:last-child{border-bottom:none}
+.tx-rail{width:3px;border-radius:2px;background:var(--steel);flex-shrink:0}
+.tx-rail.a-USED{background:var(--out)} .tx-rail.a-RECEIVED{background:var(--ok)}
+.tx-rail.a-ADDED{background:var(--safety)} .tx-rail.a-EDITED{background:var(--warn)} .tx-rail.a-DELETED{background:#777} .tx-rail.a-STATUS{background:#A14E0A}
+.tx-body{flex:1;min-width:0}
+.tx-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.tx-action{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.tx-when{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.tx-item{font-weight:600;font-size:13.5px;margin:2px 0}
+.tx-detail{font-size:12.5px;color:var(--muted)}
+.tx-who{font-size:12px;color:var(--steel)}
+.tx-who b{color:var(--ink)}
+
+/* ---------- admin gate / modals ---------- */
+.overlay{position:fixed;inset:0;background:rgba(24,28,31,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay.show{display:flex}
+.modal{background:var(--card);border-radius:8px;width:100%;max-width:460px;overflow:hidden;border-top:6px solid var(--safety)}
+.modal-head{padding:16px 22px 0}
+.modal-head h3{font-family:'Saira Condensed',sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:.03em}
+.modal-head p{font-size:13px;color:var(--muted);margin-top:2px}
+.modal-body{padding:16px 22px 22px;display:grid;gap:12px}
+.field label{display:block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:4px;background:#FCFDFB}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding-top:4px}
+.err{color:var(--out);font-size:13px;font-weight:600;display:none}
+.err.show{display:block}
+
+.admin-bar{background:#2B3238;color:#E7EBE6;border-radius:6px;padding:12px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.admin-bar .who{display:flex;align-items:center;gap:8px;flex:1;min-width:220px}
+.admin-bar label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9AA5A0}
+.admin-bar input{padding:8px 10px;border-radius:4px;border:1px solid #4A545C;background:#1F2529;color:#fff;min-width:170px}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:5px;font-size:14px;border-left:4px solid var(--safety);box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s;z-index:80}
+.toast.show{opacity:1}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- reports ---------- */
+.rep-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line);background:#F6F8F4}
+.rep-controls select,.rep-controls input{padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#fff}
+.rep-nav{display:flex;gap:4px}
+.rep-nav button{width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:4px;font-size:15px}
+.rep-nav button:hover{background:#EFF2EC}
+.rep-letterhead{text-align:center;padding:22px 16px 6px;font-size:13px;line-height:1.5}
+.rep-letterhead .agency{font-weight:700;letter-spacing:.04em}
+.rep-letterhead h2{font-family:'Saira Condensed',sans-serif;font-size:24px;text-transform:uppercase;letter-spacing:.05em;margin-top:10px}
+.rep-letterhead .range{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:2px}
+.rep-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:16px}
+.rep-card{border:1px solid var(--line);border-radius:5px;padding:10px 12px;text-align:center}
+.rep-card .n{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:26px}
+.rep-card .l{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.rep-card.c-out .n{color:var(--out)} .rep-card.c-in .n{color:var(--ok)} .rep-card.c-rep .n{color:#A14E0A}
+.rep-sec{padding:6px 16px 2px}
+.rep-sec h3{font-family:'Saira Condensed',sans-serif;font-size:17px;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--ink);padding-bottom:4px;margin-bottom:2px}
+.rep-empty{padding:14px 16px;color:var(--muted);font-size:13px}
+.rep-sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:46px 40px 30px;max-width:640px}
+.rep-sign .slot{text-align:center;font-size:13px}
+.rep-sign .line{border-bottom:1px solid var(--ink);margin-bottom:6px;height:34px}
+.rep-sign .role{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+@media print{
+  body.report-mode{background:#fff}
+  body.report-mode .plate, body.report-mode .hazard, body.report-mode .stats,
+  body.report-mode .controls, body.report-mode .grid, body.report-mode .admin-bar,
+  body.report-mode .rep-controls, body.report-mode .toast, body.report-mode .overlay{display:none!important}
+  body.report-mode .wrap{padding:0;max-width:none}
+  body.report-mode #reportView{border:none;border-radius:0}
+  body.report-mode th{position:static}
+  body.report-mode .feed{max-height:none}
+}
+@media(max-width:640px){
+  .plate-inner{padding:14px 16px 12px}
+  .wrap{padding:16px 14px 50px}
+  th,td{padding:8px 9px}
+}
+</style>
+</head>
+<body>
+
+<header class="plate">
+  <div class="plate-inner">
+    <div class="plate-id">
+      <div class="plate-agency">Office of the Provincial Engineer · Motorpool Section · Capitol, Lagawe, Ifugao</div>
+      <div class="plate-title">Motorpool <span>Inventory</span> Management</div>
+      <div class="plate-sub">Spare parts · supplies · lubricants · tires · tools &amp; machines</div>
+    </div>
+    <div class="plate-actions">
+      <span id="modeTag" class="mode-tag mode-demo">DEMO DATA</span>
+      <button class="btn btn-ghost" id="btnRefresh" title="Reload data from Google Sheet">⟳ Refresh</button>
+      <button class="btn btn-ghost" id="btnReports">📊 Reports</button>
+      <button class="btn btn-safety" id="btnAdmin">🔒 Admin</button>
+      <button class="btn btn-ghost hidden" id="btnExit">Exit admin</button>
+    </div>
+  </div>
+  <div class="hazard"></div>
+</header>
+
+<main class="wrap">
+
+  <!-- admin bar (admin mode only) -->
+  <div class="admin-bar hidden" id="adminBar">
+    <div class="who">
+      <label for="adminName">Processed by</label>
+      <input id="adminName" placeholder="Your name (shown in the log)">
+    </div>
+    <button class="btn btn-safety" id="btnAddItem">+ Add new item</button>
+  </div>
+
+  <!-- stats -->
+  <div class="stats">
+    <div class="stat s-total"><div class="num" id="stTotal">0</div><div class="lbl">Items tracked</div></div>
+    <div class="stat s-ok"><div class="num" id="stOk">0</div><div class="lbl">In stock</div></div>
+    <div class="stat s-warn"><div class="num" id="stLow">0</div><div class="lbl">Low stock (≤2)</div></div>
+    <div class="stat s-out"><div class="num" id="stOut">0</div><div class="lbl">Out of stock</div></div>
+    <div class="stat s-rep"><div class="num" id="stRep">0</div><div class="lbl">Under repair</div></div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="search" placeholder="Search items, codes, part numbers, equipment, remarks…">
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid">
+    <!-- items -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2 id="tblTitle">Inventory items</h2>
+        <span class="meta" id="tblMeta"></span>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr id="theadRow">
+            <th>Code</th><th>Item</th><th>Unit</th>
+            <th style="text-align:right">Qty</th><th style="text-align:right">Used</th><th style="text-align:right">Stocks</th>
+            <th>Status</th><th>For / Equipment</th><th>Remarks</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty hidden" id="emptyState">No items match your search.</div>
+    </section>
+
+    <!-- activity -->
+    <aside class="panel">
+      <div class="panel-head"><h2>Recent activity</h2><span class="meta" id="txMeta"></span></div>
+      <div class="feed" id="feed"></div>
+    </aside>
+  </div>
+
+  <!-- reports -->
+  <section class="panel hidden" id="reportView">
+    <div class="rep-controls">
+      <select id="repMode">
+        <option value="activity">Activity report</option>
+        <option value="stock">Stock summary</option>
+      </select>
+      <select id="repType">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <div class="rep-nav">
+        <button id="repPrev" title="Previous period">‹</button>
+        <button id="repNext" title="Next period">›</button>
+      </div>
+      <input type="date" id="repDate" title="Jump to date">
+      <button class="btn btn-quiet" id="repToday">Today</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-steel" id="repExcel">⬇ Excel</button>
+      <button class="btn btn-steel" id="repPdf">⬇ PDF</button>
+      <button class="btn btn-safety" id="repPrint">🖨 Print</button>
+    </div>
+    <div class="rep-letterhead">
+      <div>Republic of the Philippines</div>
+      <div>Province of Ifugao</div>
+      <div class="agency">OFFICE OF THE PROVINCIAL ENGINEER</div>
+      <div>Motorpool Section · Capitol, Lagawe, Ifugao</div>
+      <h2 id="repTitle">Daily Inventory Report</h2>
+      <div class="range" id="repRange"></div>
+    </div>
+
+    <!-- ACTIVITY report -->
+    <div id="repActivity">
+      <div class="rep-cards" id="repCards"></div>
+      <div class="rep-sec"><h3>Item movement summary</h3></div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Code</th><th>Item</th><th style="text-align:right">Stock out</th><th style="text-align:right">Stock in</th><th style="text-align:right">Transactions</th></tr></thead>
+          <tbody id="repMoveBody"></tbody>
+        </table>
+      </div>
+      <div class="rep-empty hidden" id="repMoveEmpty">No stock movements in this period.</div>
+      <div class="rep-sec"><h3>Activity by personnel</h3></div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Personnel</th><th style="text-align:right">Stock out</th><th style="text-align:right">Stock in</th><th style="text-align:right">Other actions</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody id="repWhoBody"></tbody>
+        </table>
+      </div>
+      <div class="rep-sec"><h3>Transaction log</h3></div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Date &amp; time</th><th>Processed by</th><th>Action</th><th>Item</th><th style="text-align:right">Qty</th><th>Where</th><th>Notes</th></tr></thead>
+          <tbody id="repLogBody"></tbody>
+        </table>
+      </div>
+      <div class="rep-empty hidden" id="repLogEmpty">No transactions recorded in this period.</div>
+    </div>
+
+    <!-- STOCK SUMMARY report -->
+    <div id="repStock" class="hidden">
+      <div class="rep-cards" id="repStockCards"></div>
+      <div class="rep-sec"><h3>Inventory stock summary</h3></div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Code</th><th>Item</th><th>Unit</th>
+            <th style="text-align:right">Qty</th><th style="text-align:right">Used</th><th style="text-align:right">Stocks</th>
+            <th style="text-align:right">Period out</th><th style="text-align:right">Period in</th>
+            <th>Status</th><th>For / Equipment</th><th>Remarks</th>
+          </tr></thead>
+          <tbody id="repStockBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="rep-sign">
+      <div class="slot"><div class="line"></div><div class="role">Prepared by</div></div>
+      <div class="slot"><div class="line"></div><div class="role">Noted by</div></div>
+    </div>
+  </section>
+</main>
+
+<!-- password gate -->
+<div class="overlay" id="ovLogin">
+  <div class="modal">
+    <div class="modal-head"><h3>Admin access</h3><p>Enter the admin password to edit, update, or delete inventory items.</p></div>
+    <div class="modal-body">
+      <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"></div>
+      <div class="err" id="pwErr">Wrong password. Try again.</div>
+      <div class="modal-foot">
+        <button class="btn btn-quiet" data-close>Cancel</button>
+        <button class="btn btn-safety" id="btnLogin">Unlock</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- item add/edit -->
+<div class="overlay" id="ovItem">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head"><h3 id="itemModalTitle">Add item</h3><p>Saved straight to the Google Sheet and logged in Recent activity.</p></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label for="fCode">Category code</label>
+          <select id="fCode">
+            <option>SP1</option><option>ES2</option><option>VS3</option><option>VL4</option>
+            <option>TF5</option><option>TOOLS</option><option>MACHINES</option>
+          </select>
+        </div>
+        <div class="field"><label for="fUnits">Unit</label><input id="fUnits" placeholder="pcs / set / pail / ltrs"></div>
+      </div>
+      <div class="field"><label for="fItem">Item name</label><input id="fItem" placeholder="e.g. Oil Filter - C525"></div>
+      <div class="field"><label for="fPart">Part no. (optional)</label><input id="fPart"></div>
+      <div class="field-row3">
+        <div class="field"><label for="fQty">Qty (total)</label><input id="fQty" type="number" step="0.25" value="0"></div>
+        <div class="field"><label for="fUsed">Used</label><input id="fUsed" type="number" step="0.25" value="0"></div>
+        <div class="field"><label for="fStocks">Stocks</label><input id="fStocks" type="number" step="0.25" value="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="fUtil">For / equipment</label><input id="fUtil" placeholder="e.g. For DT, JCB 4CX, All H.E"></div>
+        <div class="field"><label for="fPrice">Price (optional)</label><input id="fPrice"></div>
+      </div>
+      <div class="field"><label for="fStatus">Operational status (tools &amp; machines)</label>
+        <select id="fStatus">
+          <option value="">N/A — consumable item</option>
+          <option value="OPERATIONAL">Operational</option>
+          <option value="UNDER REPAIR">Under repair</option>
+        </select>
+      </div>
+      <div class="field"><label for="fRemarks">Remarks</label><input id="fRemarks"></div>
+      <div class="err" id="itemErr"></div>
+      <div class="modal-foot">
+        <button class="btn btn-quiet" data-close>Cancel</button>
+        <button class="btn btn-safety" id="btnSaveItem">Save item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- stock movement -->
+<div class="overlay" id="ovMove">
+  <div class="modal">
+    <div class="modal-head"><h3 id="moveTitle">Stock out</h3><p id="moveSub"></p></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label for="mQty">Quantity</label><input id="mQty" type="number" step="0.25" min="0.25" value="1"></div>
+        <div class="field"><label for="mLoc">Where / for what</label><input id="mLoc" placeholder="e.g. DT SEL 107, JCB 4CX"></div>
+      </div>
+      <div class="field"><label for="mDetails">Notes (optional)</label><input id="mDetails" placeholder="e.g. oil change, repair job"></div>
+      <div class="err" id="moveErr"></div>
+      <div class="modal-foot">
+        <button class="btn btn-quiet" data-close>Cancel</button>
+        <button class="btn btn-safety" id="btnSaveMove">Record</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- delete confirm -->
+<div class="overlay" id="ovDel">
+  <div class="modal">
+    <div class="modal-head"><h3>Delete item</h3><p id="delSub"></p></div>
+    <div class="modal-body">
+      <div class="modal-foot">
+        <button class="btn btn-quiet" data-close>Cancel</button>
+        <button class="btn btn-danger" id="btnConfirmDel">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIG — paste your Apps Script Web App URL here to go live.
+   While it is empty, the dashboard runs on DEMO DATA (your May 2026
+   inventory) so you can present it before the sheet is wired up.
+   In demo mode the admin password is: admin123
+===================================================================== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLsDIhRTF2JVYw_MRIGt5vTCQdQ4Qix8n6_09ZTpnV6sZ16MCKtkbANhywsf8NUzKS/exec";          // e.g. "https://script.google.com/macros/s/XXXX/exec"
+const DEMO_PASSWORD = "admin123";
+
+const CATS = [
+  {code:"ALL",label:"All"},
+  {code:"SP1",label:"Spare parts"},
+  {code:"ES2",label:"Electrical"},
+  {code:"VS3",label:"Various supplies"},
+  {code:"VL4",label:"Lubricants"},
+  {code:"TF5",label:"Tires & flaps"},
+  {code:"TOOLS",label:"Tools"},
+  {code:"MACHINES",label:"Machines"}
+];
+
+const SEED_ITEMS = [{"id":"ITM-0001","code":"SP1","item":"Air Filter - Hino truck","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"For Stock","remarks":"","status":""},{"id":"ITM-0002","code":"SP1","item":"Axle Seal","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0003","code":"SP1","item":"Brake Flexible Hose","part":"","units":"pcs","qty":4.0,"used":0.0,"stocks":4.0,"price":"","util":"DT SBK 466","remarks":"","status":""},{"id":"ITM-0004","code":"SP1","item":"Carbon Brush Assorted","part":"","units":"box","qty":20.0,"used":5.0,"stocks":15.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0005","code":"SP1","item":"Center Bolt","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0006","code":"SP1","item":"Fuel Filter - EF1513","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0007","code":"SP1","item":"Fuel Filter - DF-505","part":"","units":"pcs","qty":6.0,"used":0.0,"stocks":6.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0008","code":"SP1","item":"Fuel Filter - F513","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0009","code":"SP1","item":"Fuel Filter - EF 15130","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0010","code":"SP1","item":"Hose Clamp","part":"","units":"pcs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0011","code":"SP1","item":"Hydra Clamp Seal","part":"","units":"pcs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0012","code":"SP1","item":"Hydraulic Filter 7902","part":"","units":"pcs","qty":1.0,"used":1.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0013","code":"SP1","item":"Kingpin-Hino","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0014","code":"SP1","item":"Oil Filter - 320/B4420","part":"","units":"pcs","qty":1.0,"used":1.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0015","code":"SP1","item":"Oil Filter - C525","part":"","units":"pcs","qty":4.0,"used":2.0,"stocks":2.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0016","code":"SP1","item":"Oil Filter - DO-605","part":"","units":"pcs","qty":4.0,"used":2.0,"stocks":2.0,"price":"","util":"DT SEL 107 & GRN LOADER","remarks":"","status":""},{"id":"ITM-0017","code":"SP1","item":"Primary Filter - 320/A7124","part":"","units":"pcs","qty":1.0,"used":1.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0018","code":"SP1","item":"Rubber Cap Assorted Sizes","part":"","units":"box","qty":20.0,"used":17.0,"stocks":3.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0019","code":"SP1","item":"Seal Kit Assorted","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0020","code":"SP1","item":"Seal Kit","part":"991/001571","units":"pcs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"Issued","status":""},{"id":"ITM-0021","code":"SP1","item":"Tensioner w/ Bearing","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0022","code":"SP1","item":"Tie Rod End","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"For DT 107","remarks":"","status":""},{"id":"ITM-0023","code":"SP1","item":"Tire Rim - Nissan Truck","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"For DT 466","remarks":"","status":""},{"id":"ITM-0024","code":"SP1","item":"U-Bolt Front(Short)","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0025","code":"SP1","item":"U-Bolt Rear (Long)","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0026","code":"SP1","item":"U-Bolt Slim Type","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0027","code":"SP1","item":"Wheel Cylinder Rear","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0028","code":"SP1","item":"Wheel Stud Bolt Inner","part":"","units":"pcs","qty":10.0,"used":10.0,"stocks":0.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0029","code":"SP1","item":"Wheel Stud Bolt Left","part":"","units":"set","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0030","code":"SP1","item":"Wheel Stud Bolt Right","part":"","units":"set","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"For DT","remarks":"","status":""},{"id":"ITM-0031","code":"SP1","item":"Wear Strip - Bottom","part":"333/Y8358","units":"pcs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"Issued","status":""},{"id":"ITM-0032","code":"SP1","item":"Wear Strip - Top","part":"33/Y8358","units":"pcs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"JCB 4CX","remarks":"Issued","status":""},{"id":"ITM-0033","code":"SP1","item":"Transmission Oil Seal","part":"TC 65x88x12","units":"set","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"Kawasaki Loader","remarks":"Issued","status":""},{"id":"ITM-0034","code":"ES2","item":"3 SMF Battery BLK","part":"","units":"pcs","qty":3.0,"used":2.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0035","code":"ES2","item":"Auto Bulb 24V Single","part":"","units":"pcs","qty":10.0,"used":0.0,"stocks":10.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0036","code":"ES2","item":"Auto Bulb 24V double","part":"","units":"pcs","qty":10.0,"used":0.0,"stocks":10.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0037","code":"ES2","item":"Auto Wire #12","part":"","units":"m","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0038","code":"ES2","item":"Auto Wire #14","part":"","units":"roll","qty":0.5,"used":0.5,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0039","code":"ES2","item":"Bush Relay Socket","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0040","code":"ES2","item":"Bush Relay","part":"","units":"pcs","qty":6.0,"used":5.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0041","code":"ES2","item":"Voltage Regulator w/ Socket","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0042","code":"ES2","item":"Battery Lug","part":"","units":"pcs","qty":2.0,"used":2.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0043","code":"ES2","item":"Pin Fuse Assorted Ratings","part":"","units":"pcs","qty":5.0,"used":2.0,"stocks":3.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0044","code":"ES2","item":"Battery Clamp","part":"","units":"pcs","qty":5.0,"used":5.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0045","code":"VS3","item":"Battery Solution","part":"","units":"ltrs","qty":12.0,"used":0.0,"stocks":12.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0046","code":"VS3","item":"Borax","part":"","units":"can","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0047","code":"VS3","item":"Bronze Rod","part":"","units":"pcs","qty":2.5,"used":0.5,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0048","code":"VS3","item":"Copper Tube Assorted Sizes","part":"","units":"roll","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0049","code":"VS3","item":"Cutting Disc","part":"","units":"box","qty":2.0,"used":1.5,"stocks":0.5,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0050","code":"VS3","item":"Electric Tape","part":"","units":"roll","qty":1.5,"used":1.5,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0051","code":"VS3","item":"Gasket Maker","part":"","units":"tube","qty":4.0,"used":2.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0052","code":"VS3","item":"Grinding Stone","part":"","units":"pcs","qty":0.75,"used":0.75,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0053","code":"VS3","item":"Hacksaw Blade","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0054","code":"VS3","item":"Nicolite","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0055","code":"VS3","item":"Sand Paper","part":"","units":"pcs","qty":7.0,"used":5.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0056","code":"VS3","item":"Sander Blade","part":"","units":"pcs","qty":3.0,"used":1.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0057","code":"VS3","item":"Soldering Lead","part":"","units":"roll","qty":0.5,"used":0.0,"stocks":0.5,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0058","code":"VS3","item":"Special Welding Rod - 3 Types","part":"","units":"pcs","qty":7.0,"used":7.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0059","code":"VS3","item":"Ordinary Welding Rod J-38 Reg","part":"","units":"box","qty":3.0,"used":2.5,"stocks":0.5,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0060","code":"VS3","item":"Ordinary Welding Rod Small","part":"","units":"box","qty":3.5,"used":3.0,"stocks":0.5,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0061","code":"VS3","item":"T Rex 50/Rust Remover","part":"","units":"can","qty":3.0,"used":3.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0062","code":"VS3","item":"Teflon","part":"","units":"roll","qty":3.0,"used":1.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0063","code":"VL4","item":"ATF (Automatic Transmission Fluid)","part":"","units":"ltrs","qty":18.0,"used":3.0,"stocks":15.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0064","code":"VL4","item":"Oil #15w 40 Special Delo","part":"","units":"pails","qty":4.0,"used":1.0,"stocks":3.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0065","code":"VL4","item":"Oil #140","part":"","units":"pail","qty":4.0,"used":4.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0066","code":"VL4","item":"Oil #30","part":"","units":"gal","qty":3.0,"used":1.0,"stocks":2.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0067","code":"VL4","item":"Oil #90","part":"","units":"pail/ltrs","qty":4.0,"used":0.5,"stocks":3.5,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0068","code":"VL4","item":"Coolant","part":"","units":"gals","qty":13.0,"used":1.0,"stocks":12.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0069","code":"VL4","item":"Oil #40 Ordinary","part":"","units":"ltrs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0070","code":"VL4","item":"Oil #10 AW68","part":"","units":"pail","qty":5.0,"used":5.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0071","code":"VL4","item":"MP Grease #3","part":"","units":"pail","qty":1.5,"used":0.5,"stocks":1.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0072","code":"VL4","item":"Brake Fluid","part":"","units":"ltrs","qty":19.0,"used":5.0,"stocks":14.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0073","code":"VL4","item":"AW 46","part":"","units":"ltrs","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0074","code":"VL4","item":"Semi Synthetic Oil 15w 40","part":"","units":"gal","qty":0.0,"used":0.0,"stocks":0.0,"price":"","util":"All H.E","remarks":"","status":""},{"id":"ITM-0075","code":"VL4","item":"Vulcanizing Kit","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"All H.E","remarks":"ICS to Peter L.","status":""},{"id":"ITM-0076","code":"TF5","item":"Tire 14x24","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"Loader","remarks":"Motorpool","status":""},{"id":"ITM-0077","code":"TF5","item":"Tire 9x20","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":0.0,"price":"","util":"Hino","remarks":"","status":""},{"id":"ITM-0078","code":"TF5","item":"Tire 8.25x20","part":"","units":"set","qty":15.0,"used":1.0,"stocks":14.0,"price":"","util":"ISUZU/HINO","remarks":"At PGSO","status":""},{"id":"ITM-0079","code":"TF5","item":"Tire 16.8x25 R28","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"JCB 4CX","remarks":"","status":""},{"id":"ITM-0080","code":"TOOLS","item":"Pipe Wrench 36\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0081","code":"TOOLS","item":"Pipe Wrench 24\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0082","code":"TOOLS","item":"Combination Wrench(6-50) 24pcs","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0083","code":"TOOLS","item":"Combination Wrench (8-32) 17pcs","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"4 pcs. Borrowed by Pablo B.","status":"OPERATIONAL"},{"id":"ITM-0084","code":"TOOLS","item":"Back Wrench(6-32) 11pcs","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0085","code":"TOOLS","item":"Socket Wrench Light 16pcs Black","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"D# Power Handle, Ratchet","status":"OPERATIONAL"},{"id":"ITM-0086","code":"TOOLS","item":"Socket Wrench Heavy 10pcs RED","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Borrowed By Pablo Butaon","status":"OPERATIONAL"},{"id":"ITM-0087","code":"TOOLS","item":"Hacksaw Handle","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"1PC Damaged Handle 1pc","status":"OPERATIONAL"},{"id":"ITM-0088","code":"TOOLS","item":"Socket Wrench w/Handle Light 13pcs GRN","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0089","code":"TOOLS","item":"Socket Wrench Long Type 11pcs RED(Steve Man Brand)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Damaged Ratchet","status":"OPERATIONAL"},{"id":"ITM-0090","code":"TOOLS","item":"Grease Gun w/Hose","part":"","units":"pcs","qty":5.0,"used":1.0,"stocks":4.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0091","code":"TOOLS","item":"Seal Clip Remover","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0092","code":"TOOLS","item":"Oil Filter Remover(Chain Type)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Defective","status":"OPERATIONAL"},{"id":"ITM-0093","code":"TOOLS","item":"Multimeter Tester-Sanwa","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0094","code":"TOOLS","item":"Slip Joint Plier (Mechanical)","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0095","code":"TOOLS","item":"Needle Nose/Long Plier","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0096","code":"TOOLS","item":"Lineman Plier (Yellow & Red, Green)","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":2.0,"price":"","util":"","remarks":"1 pc. ICS to Peter L.","status":"OPERATIONAL"},{"id":"ITM-0097","code":"TOOLS","item":"Feeler Gauge","part":"","units":"pcs","qty":4.0,"used":1.0,"stocks":3.0,"price":"","util":"","remarks":"1 pc missing April 2026 by Jemree B.","status":"OPERATIONAL"},{"id":"ITM-0098","code":"TOOLS","item":"Vice Grip","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0099","code":"TOOLS","item":"Soldering Iron 60W Pointed","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0100","code":"TOOLS","item":"Flat Screw Driver New(Cabinet)","part":"","units":"set","qty":4.0,"used":0.0,"stocks":4.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0101","code":"TOOLS","item":"Philip Screw Driver New","part":"","units":"set","qty":4.0,"used":0.0,"stocks":4.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0102","code":"TOOLS","item":"Riveter","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"1 pc are by peter L.","status":"OPERATIONAL"},{"id":"ITM-0103","code":"TOOLS","item":"Sledge Hammer 6LB","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"","remarks":"1 pc ICS by peter L.","status":"OPERATIONAL"},{"id":"ITM-0104","code":"TOOLS","item":"C-Clamp 8\" Orange","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0105","code":"TOOLS","item":"Torque Wrench 3/4 Drive Black","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0106","code":"TOOLS","item":"Oil Filter Remover Socket Type 21pcs Blue Box","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0107","code":"TOOLS","item":"Bearing Puller Heavy Duty (Round) Old","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Dismantled","status":"OPERATIONAL"},{"id":"ITM-0108","code":"TOOLS","item":"Scissor","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"1 pc are by peter L.","status":"OPERATIONAL"},{"id":"ITM-0109","code":"TOOLS","item":"Vernier Caliper 200mm","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0110","code":"TOOLS","item":"Piston Ring Compressor 4\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0111","code":"TOOLS","item":"Mini Pick & Hook Set 4pcs 76mm","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0112","code":"TOOLS","item":"Combination Wrench 25pcs Flyman Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0113","code":"TOOLS","item":"Adjustable Wrench 5pcs Ingco Brand","part":"","units":"pcs","qty":5.0,"used":0.0,"stocks":5.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0114","code":"TOOLS","item":"Pipe Wrench HD 14\" Flyman, 18\" Ingco Brand","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0115","code":"TOOLS","item":"1/2 Drive Impact Socket Wrench 13pcs Makute Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"# 6 & Short Ext. Handle Missing, Damage Rachet","status":"OPERATIONAL"},{"id":"ITM-0116","code":"TOOLS","item":"1/2 Drive HD 18\" Click Torque Wrench Hans Brand GRN","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Are by Jemree Binwag","status":"OPERATIONAL"},{"id":"ITM-0117","code":"TOOLS","item":"1/2 Drive Ratchet Wrench 14pcs 6point Flyman Brand(Blue Box)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0118","code":"TOOLS","item":"1/2 Drive Socket Wrench 27pcs Stanley","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0119","code":"TOOLS","item":"Ratchet Stype Piston Ring Compressor/Installer 6\"","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"","remarks":"1pc ARE by JEMREE B.","status":"OPERATIONAL"},{"id":"ITM-0120","code":"TOOLS","item":"Ratchet Stype Piston Ring Compressor/Installer 4\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0121","code":"TOOLS","item":"Ratchet Stype Piston Ring Compressor/Installer 3\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0122","code":"TOOLS","item":"Tap & Die Set 40pcs Flyman Brand GRN BOX","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"1 pc. # 10 w/ handle borrowed by Joshua B.","status":"OPERATIONAL"},{"id":"ITM-0123","code":"TOOLS","item":"Breaker Bar 1/2 Drive 18\" Handle","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0124","code":"TOOLS","item":"1 Drive Socket Wrench Set 10pcs RED BOX","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0125","code":"TOOLS","item":"1 Drive Socket Wrench Set 20pcs GRN Hayoma Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"At other room","status":"OPERATIONAL"},{"id":"ITM-0126","code":"TOOLS","item":"3/4 Drive Socket Wrench HD 16pcs 6point GRN","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Borrowed by Jose Ballatong","status":"OPERATIONAL"},{"id":"ITM-0127","code":"TOOLS","item":"1/2 Drive Socket Wrench 34mm only(Steel Cabinet)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0128","code":"TOOLS","item":"3/4 Drive Socket Wrench 35mm only(Steel Cabinet)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0129","code":"TOOLS","item":"3/4 Drive Impact Socket Wrench 6point 58mm(Steel Cabinet)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0130","code":"TOOLS","item":"Valve Lock Remover/Installer RED Plastic Box","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0131","code":"TOOLS","item":"Spring Compressor Carbon Steel Engine Red Plastic Box","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0132","code":"TOOLS","item":"Universal Inner Bearing Puller 5pcs (Slide Hammer)RED BOX","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other room","status":"OPERATIONAL"},{"id":"ITM-0133","code":"TOOLS","item":"Manual Vernier Caliper 150mm Carbon Steel","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0134","code":"TOOLS","item":"1/4 Drive Socket Wrench Set 46pcs Flyman Brand (RED/BLUE BOX)","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0135","code":"TOOLS","item":"Honing Tool RED","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0136","code":"TOOLS","item":"Circlip Plier Remover 4pcs/set Pouch","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0137","code":"TOOLS","item":"Hammer 2LB Yellow","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0138","code":"TOOLS","item":"Ball peen Hammer 2LB Flyman Brand BLUE","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"1pc Damage Handle at cabinet","status":"OPERATIONAL"},{"id":"ITM-0139","code":"TOOLS","item":"Sledge Hammer 4LB & 6LB Tolsen Brand","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"","remarks":"1 pc - 4LB ARE Jemree Binwag 1 pc 6LBS are by Peter L.","status":"OPERATIONAL"},{"id":"ITM-0140","code":"TOOLS","item":"Pliers 5pcs Set 8\" Big","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0141","code":"TOOLS","item":"Pliers 5pcs/set 6\"","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0142","code":"TOOLS","item":"Locking Pliers Vise Grip Flat 10\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0143","code":"TOOLS","item":"Locking Pliers Vise Grip Round 10\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0144","code":"TOOLS","item":"Locking Pliers Vise Grip Round 5\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0145","code":"TOOLS","item":"Locking Pliers Vise Grip Round 7\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0146","code":"TOOLS","item":"Screw Driver Set 18pcs (NEW)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0147","code":"TOOLS","item":"Hacksaw 12\" w/Blade HD(NEW)","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0148","code":"TOOLS","item":"Mini Hacksaw and Blade","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"1pc Damaged","status":"OPERATIONAL"},{"id":"ITM-0149","code":"TOOLS","item":"File 12\" Round & Flat","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0150","code":"TOOLS","item":"Metal File Set 8\" 6pcs","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0151","code":"TOOLS","item":"Allen Keys 13pcs/set (Short)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"1 Pc. Missig","status":"OPERATIONAL"},{"id":"ITM-0152","code":"TOOLS","item":"Allen Keys 36pcs/set","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0153","code":"TOOLS","item":"Allen Socket Wrench Set HD Flyman Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0154","code":"TOOLS","item":"Pipe Threader Hoyoman Brand GRN","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other Room","status":"OPERATIONAL"},{"id":"ITM-0155","code":"TOOLS","item":"Multi Tester (Digital) Ingco Brand","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0156","code":"TOOLS","item":"Soldering Iron HD","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0157","code":"TOOLS","item":"Bench Vise 4\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0158","code":"TOOLS","item":"Bench Vise 6\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0159","code":"TOOLS","item":"Bench Vise 8\"","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0160","code":"TOOLS","item":"F-Clamp 14\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0161","code":"TOOLS","item":"C-Clamp Locking Plier Vise Grip 11\"","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0162","code":"TOOLS","item":"C-Clamp HD 4pcs (4\",6\",8\",12\")","part":"","units":"set","qty":4.0,"used":0.0,"stocks":4.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0163","code":"TOOLS","item":"Gear Puller 3 Jaw HD 6\",8\",12\" 3 Fingers","part":"","units":"pcs","qty":3.0,"used":0.0,"stocks":3.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0164","code":"TOOLS","item":"Car Repair Lying Board","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0165","code":"TOOLS","item":"Cylinder Tank Cart 6\"-10\"","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0166","code":"TOOLS","item":"Impact Screw Driver Set","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0167","code":"TOOLS","item":"Spot Light 60w,100w Solar","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"Disposed due to damaged","status":"OPERATIONAL"},{"id":"ITM-0168","code":"TOOLS","item":"HD Tire Rim Lock Remover for Lug Type Tire GRN","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Are by Peter L.","status":"OPERATIONAL"},{"id":"ITM-0169","code":"TOOLS","item":"Vacuum Tire Changer Manual Red","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other Room","status":"OPERATIONAL"},{"id":"ITM-0170","code":"TOOLS","item":"Car Battery Charger 12V (Electronic type)","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0171","code":"TOOLS","item":"350W 6\" Double Wheeled Bench w/Grinding Wheel","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Mounted on Stand","status":"OPERATIONAL"},{"id":"ITM-0172","code":"TOOLS","item":"Toolbox Car Repair 46pcs/set Hand Tools RED","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0173","code":"TOOLS","item":"Manual Hand Winch Crank Pulley 2-3LBS Tolsen,Hoyoma Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other room , Complete","status":"OPERATIONAL"},{"id":"ITM-0174","code":"TOOLS","item":"10Tons Three Reversable Jaws Hydraulic Gear","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other Room","status":"OPERATIONAL"},{"id":"ITM-0175","code":"TOOLS","item":"5Tons Three Reversable Jaws Hydraulic Gear Puller","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other Room","status":"OPERATIONAL"},{"id":"ITM-0176","code":"TOOLS","item":"Rotary Tool Mini Die Grinder w/ 211pcs Lotus Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete(In the Cartoon Box)","status":"OPERATIONAL"},{"id":"ITM-0177","code":"TOOLS","item":"Cordless Rotary Tool 3.6V","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete(In the Cartoon Box)","status":"OPERATIONAL"},{"id":"ITM-0178","code":"TOOLS","item":"Head Lamp w/Adjustable Head Strap","part":"","units":"pcs","qty":3.0,"used":1.0,"stocks":2.0,"price":"","util":"","remarks":"1pc Damaged W/PRS 2 pcs. Not Charging","status":"OPERATIONAL"},{"id":"ITM-0179","code":"TOOLS","item":"Vehicle Oil Seal Screw Driver Set Pick & Hock Kit","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0180","code":"TOOLS","item":"1/2 Drive Air Impact Wrench Ingco Brand","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0181","code":"TOOLS","item":"All Steel Trolley Three Shelf Service Tool Cart","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0182","code":"TOOLS","item":"Transmission Jack 2-3 Tons","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0183","code":"TOOLS","item":"Auto Darkening Welding Mask (Helmet)","part":"","units":"pcs","qty":4.0,"used":0.0,"stocks":4.0,"price":"","util":"","remarks":"1 pc Re- ICS to Joshua B.","status":"OPERATIONAL"},{"id":"ITM-0184","code":"TOOLS","item":"HD Hydraulic Jack 4-5 Tons","part":"","units":"pcs","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0185","code":"TOOLS","item":"HD Hydraulic Bottle Jack 32 Tons blue","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"ICS to Peter L.","status":"OPERATIONAL"},{"id":"ITM-0186","code":"TOOLS","item":"Industrial Jack Stand 3 Tons & 6 Tons (2pcs Each Tons)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Complete","status":"OPERATIONAL"},{"id":"ITM-0187","code":"TOOLS","item":"Extension Wire 1 w/Housing ( Round & 12m) & 1 w/o Housing","part":"","units":"pcs","qty":2.0,"used":1.0,"stocks":1.0,"price":"","util":"","remarks":"Round Missing","status":"OPERATIONAL"},{"id":"ITM-0188","code":"MACHINES","item":"Electric Drill Press Machine 13mm Capacity","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Mounted Stand","status":"OPERATIONAL"},{"id":"ITM-0189","code":"MACHINES","item":"Electric Drill Stand Bracket Bench Drill Carrier 500mm","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"At other room","status":"OPERATIONAL"},{"id":"ITM-0190","code":"MACHINES","item":"Welding Machine HD(Old)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"at other room (Damaged switch)","status":"OPERATIONAL"},{"id":"ITM-0191","code":"MACHINES","item":"Welding Machine Light Duty Hideki (Old)","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0192","code":"MACHINES","item":"Power Sprayer","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0193","code":"MACHINES","item":"Crocodile Jack HD (Old)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0194","code":"MACHINES","item":"Crocodile Jack Light Duty 3Tons","part":"","units":"pcs","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0195","code":"MACHINES","item":"Chain Block 2Tons","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0196","code":"MACHINES","item":"Chain Block 5Tons (Old)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0197","code":"MACHINES","item":"Battery Charger Quick Type","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0198","code":"MACHINES","item":"Hand Drill w/ 6pcs Bits","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0199","code":"MACHINES","item":"Battery Tester","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0200","code":"MACHINES","item":"Vulcanizing Machine","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Are by Peter L.","status":"OPERATIONAL"},{"id":"ITM-0201","code":"MACHINES","item":"Aligning & Cambering Machine","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Not Mounted","status":"OPERATIONAL"},{"id":"ITM-0202","code":"MACHINES","item":"Lifting Machine","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"New MP","status":"OPERATIONAL"},{"id":"ITM-0203","code":"MACHINES","item":"Wheel Balancing Machine","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"New MP","status":"OPERATIONAL"},{"id":"ITM-0204","code":"MACHINES","item":"Press Machine","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"New MP","status":"OPERATIONAL"},{"id":"ITM-0205","code":"MACHINES","item":"Diesel Generator PWH 8500E DST","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"out by Elmer Churhangon for repair on March 26.","status":"OPERATIONAL"},{"id":"ITM-0206","code":"MACHINES","item":"Air Compressor Vespa","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"New MP","status":"OPERATIONAL"},{"id":"ITM-0207","code":"MACHINES","item":"Steel Drill Bosh GSB 650Watts","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Damaged","status":"OPERATIONAL"},{"id":"ITM-0208","code":"MACHINES","item":"Oxygen & Acetylene Tank Set","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0209","code":"MACHINES","item":"Electric Vulcanizing w/ Timer (Red)","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0210","code":"MACHINES","item":"300-500 Inverter Welding Machine HD Contender","part":"","units":"set","qty":2.0,"used":0.0,"stocks":2.0,"price":"","util":"","remarks":"","status":"OPERATIONAL"},{"id":"ITM-0211","code":"MACHINES","item":"400-500 Arc Welding Machine Coil Winding","part":"","units":"set","qty":1.0,"used":0.0,"stocks":1.0,"price":"","util":"","remarks":"Re MR. C/O Joshua Bilibli J.O. Welder","status":"OPERATIONAL"}];
+const SEED_TX = [
+  {ts:"2026-06-09T09:14:00", user:"Storekeeper", action:"USED", item:"Oil Filter - C525", qty:"1", location:"DT SEL 107", details:"Scheduled oil change"},
+  {ts:"2026-06-08T15:42:00", user:"Storekeeper", action:"RECEIVED", item:"AW 46", qty:"40", location:"Motorpool", details:"Delivery from supplier"},
+  {ts:"2026-06-08T10:05:00", user:"Storekeeper", action:"USED", item:"Cutting Disc", qty:"2", location:"All H.E", details:"Welding works"},
+  {ts:"2026-06-07T11:20:00", user:"Storekeeper", action:"STATUS CHANGED", item:"Oil Filter Remover(Chain Type)", qty:"", location:"Motorpool", details:"Marked as under repair"},
+  {ts:"2026-06-05T14:30:00", user:"Admin", action:"EDITED ITEM", item:"Tire 8.25x20", qty:"14", location:"At PGSO", details:"Item details updated"}
+];
+
+/* ---------------- state ---------------- */
+let items = [];
+let txs = [];
+let isLive = !!SCRIPT_URL;
+let isAdmin = false;
+let adminPw = "";
+let activeCat = "ALL";
+let editingId = null;   // null = adding
+let moveType = "USED";
+let moveId = null;
+let delId = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtN = n => { const v = Number(n)||0; return v % 1 === 0 ? String(v) : v.toFixed(2).replace(/0$/,''); };
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ---------------- data ---------------- */
+async function loadData(showMsg){
+  if(!isLive){
+    items = JSON.parse(JSON.stringify(SEED_ITEMS));
+    txs = JSON.parse(JSON.stringify(SEED_TX));
+    renderAll();
+    return;
+  }
+  try{
+    $("btnRefresh").innerHTML = '<span class="spin"></span>';
+    const res = await fetch(SCRIPT_URL + "?action=all", {redirect:"follow"});
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error||"Load failed");
+    items = data.items; txs = data.transactions;
+    allTx = null; // reports will re-fetch fresh transactions
+    renderAll();
+    if(showMsg) toast("Data refreshed from Google Sheet");
+  }catch(err){
+    toast("Could not load from Google Sheet: " + err.message);
+  }finally{
+    $("btnRefresh").innerHTML = "⟳ Refresh";
+  }
+}
+
+async function api(payload){
+  if(!isLive){ return demoApi(payload); }
+  const res = await fetch(SCRIPT_URL, {
+    method:"POST", redirect:"follow",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+/* demo mode mimics the backend locally so you can try everything */
+function demoApi(p){
+  const now = new Date().toISOString();
+  const log = (action,it,qty,details,location)=> txs.unshift({ts:now,user:p.user||"Admin",action,item:it,qty:String(qty??""),details:details||"",location:location||""});
+  if(p.action==="login") return {ok: p.password===DEMO_PASSWORD};
+  if(p.password!==DEMO_PASSWORD) return {ok:false,error:"Wrong password"};
+  if(p.action==="addItem"){
+    const max = items.reduce((m,i)=>Math.max(m, Number((i.id.match(/\d+/)||[0])[0])),0);
+    p.item.id = "ITM-"+String(max+1).padStart(4,"0");
+    items.push(p.item); log("ADDED ITEM", p.item.item, p.item.qty, "New item added to inventory", p.item.util);
+    return {ok:true,id:p.item.id};
+  }
+  if(p.action==="updateItem"){
+    const i = items.findIndex(x=>x.id===p.item.id); if(i<0) return {ok:false,error:"Not found"};
+    items[i]=p.item; log("EDITED ITEM", p.item.item, p.item.stocks, "Item details updated", p.item.util);
+    return {ok:true};
+  }
+  if(p.action==="deleteItem"){
+    const i = items.findIndex(x=>x.id===p.id); if(i<0) return {ok:false,error:"Not found"};
+    log("DELETED ITEM", items[i].item, "", "Item removed from inventory","");
+    items.splice(i,1); return {ok:true};
+  }
+  if(p.action==="setStatus"){
+    const it = items.find(x=>x.id===p.id); if(!it) return {ok:false,error:"Not found"};
+    it.status = p.status;
+    log("STATUS CHANGED", it.item, "", "Marked as " + (p.status==="UNDER REPAIR"?"under repair":"operational"), p.location||it.util);
+    return {ok:true};
+  }
+  if(p.action==="movement"){
+    const it = items.find(x=>x.id===p.id); if(!it) return {ok:false,error:"Not found"};
+    const amt = Number(p.qty)||0;
+    if(p.type==="USED"){ it.used+=amt; it.stocks=Math.max(0,it.stocks-amt); }
+    else { it.qty+=amt; it.stocks+=amt; }
+    log(p.type, it.item, amt, p.details, p.location);
+    return {ok:true};
+  }
+  return {ok:false,error:"Unknown action"};
+}
+
+/* ---------------- rendering ---------------- */
+function isEquipment(it){ return it.code==="TOOLS" || it.code==="MACHINES"; }
+function statusOf(it){
+  if(isEquipment(it)){
+    if(String(it.status||"").toUpperCase()==="UNDER REPAIR") return ["UNDER REPAIR","b-rep"];
+    return ["OPERATIONAL","b-ok"];
+  }
+  if((Number(it.stocks)||0) <= 0) return ["OUT OF STOCK","b-out"];
+  if(Number(it.stocks) <= 2) return ["LOW STOCK","b-warn"];
+  return ["IN STOCK","b-ok"];
+}
+
+function renderChips(){
+  $("chips").innerHTML = CATS.map(c=>{
+    const n = c.code==="ALL" ? items.length : items.filter(i=>i.code===c.code).length;
+    return `<button class="chip ${activeCat===c.code?"on":""}" data-cat="${c.code}" title="${c.label}">${c.code}<span class="ct">${n}</span></button>`;
+  }).join("");
+}
+
+function filtered(){
+  const q = $("q").value.trim().toLowerCase();
+  return items.filter(it=>{
+    if(activeCat!=="ALL" && it.code!==activeCat) return false;
+    if(!q) return true;
+    return [it.item,it.code,it.part,it.util,it.remarks,it.id,it.status].join(" ").toLowerCase().includes(q);
+  });
+}
+
+function renderTable(){
+  const list = filtered();
+  $("tblMeta").textContent = list.length + " of " + items.length + " items";
+  $("emptyState").classList.toggle("hidden", list.length>0);
+
+  const adminCol = isAdmin ? '<th class="actions-th">Actions</th>' : "";
+  $("theadRow").innerHTML = `
+    <th>Code</th><th>Item</th><th>Unit</th>
+    <th style="text-align:right">Qty</th><th style="text-align:right">Used</th><th style="text-align:right">Stocks</th>
+    <th>Status</th><th>For / Equipment</th><th>Remarks</th>${adminCol}`;
+
+  $("tbody").innerHTML = list.map(it=>{
+    const [stxt, scls] = statusOf(it);
+    const repBtn = isEquipment(it)
+      ? (String(it.status||"").toUpperCase()==="UNDER REPAIR"
+          ? `<button class="mini m-in m-wide" data-act="oper" data-id="${it.id}">✓ Mark operational</button>`
+          : `<button class="mini m-out m-wide" data-act="repair" data-id="${it.id}">⚒ Mark under repair</button>`)
+      : "";
+    const actions = isAdmin ? `<td class="actions-cell"><div class="row-actions">
+        <button class="mini m-out" data-act="use" data-id="${it.id}">− Use</button>
+        <button class="mini m-in" data-act="recv" data-id="${it.id}">+ Receive</button>
+        ${repBtn}
+        <button class="mini" data-act="edit" data-id="${it.id}">Edit</button>
+        <button class="mini m-out" data-act="del" data-id="${it.id}">Delete</button>
+      </div></td>` : "";
+    return `<tr>
+      <td><span class="code-tag code-${esc(it.code)}">${esc(it.code)}</span></td>
+      <td><div class="item-name">${esc(it.item)}</div>${it.part?`<div class="item-part">P/N ${esc(it.part)}</div>`:""}</td>
+      <td class="cell-dim">${esc(it.units)}</td>
+      <td class="num-cell">${fmtN(it.qty)}</td>
+      <td class="num-cell">${fmtN(it.used)}</td>
+      <td class="num-cell"><b>${fmtN(it.stocks)}</b></td>
+      <td><span class="badge ${scls}">${stxt}</span></td>
+      <td class="cell-dim">${esc(it.util)}</td>
+      <td class="cell-dim">${esc(it.remarks)}</td>${actions}
+    </tr>`;
+  }).join("");
+}
+
+function renderStats(){
+  let ok=0, low=0, out=0, rep=0;
+  items.forEach(it=>{
+    if(isEquipment(it)){
+      if(String(it.status||"").toUpperCase()==="UNDER REPAIR") rep++; else ok++;
+      return;
+    }
+    const s = Number(it.stocks)||0;
+    if(s<=0) out++; else if(s<=2) low++; else ok++;
+  });
+  $("stTotal").textContent = items.length;
+  $("stOk").textContent = ok; $("stLow").textContent = low; $("stOut").textContent = out;
+  $("stRep").textContent = rep;
+}
+
+function fmtWhen(ts){
+  const d = new Date(ts);
+  if(isNaN(d)) return esc(ts);
+  return d.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}) + " · " +
+         d.toLocaleTimeString("en-PH",{hour:"numeric",minute:"2-digit"});
+}
+function actionVerb(a){
+  return {USED:"Stock out", RECEIVED:"Stock in", "ADDED ITEM":"Item added","EDITED ITEM":"Item edited","DELETED ITEM":"Item deleted","STATUS CHANGED":"Status changed"}[a] || a;
+}
+function renderFeed(){
+  $("txMeta").textContent = txs.length ? txs.length + " records" : "";
+  if(!txs.length){ $("feed").innerHTML = '<div class="empty">No transactions yet. Admin actions will appear here with who, what, when and where.</div>'; return; }
+  $("feed").innerHTML = txs.map(t=>{
+    const cls = t.action.split(" ")[0];
+    const qty = t.qty ? ` · qty ${esc(t.qty)}` : "";
+    const loc = t.location ? ` @ ${esc(t.location)}` : "";
+    return `<div class="tx">
+      <div class="tx-rail a-${esc(cls)}"></div>
+      <div class="tx-body">
+        <div class="tx-top"><span class="tx-action">${esc(actionVerb(t.action))}</span><span class="tx-when">${fmtWhen(t.ts)}</span></div>
+        <div class="tx-item">${esc(t.item)}${qty}</div>
+        <div class="tx-who">by <b>${esc(t.user)}</b>${loc}</div>
+        ${t.details?`<div class="tx-detail">${esc(t.details)}</div>`:""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderAll(){ renderStats(); renderChips(); renderTable(); renderFeed(); }
+
+/* ---------------- modals ---------------- */
+function open(id){ $(id).classList.add("show"); }
+function close(id){ $(id).classList.remove("show"); }
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",e=>e.target.closest(".overlay").classList.remove("show")));
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{ if(e.target===o) o.classList.remove("show"); }));
+
+/* ---------------- admin flow ---------------- */
+$("btnAdmin").addEventListener("click",()=>{ $("pw").value=""; $("pwErr").classList.remove("show"); open("ovLogin"); setTimeout(()=>$("pw").focus(),50); });
+$("pw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnLogin").click(); });
+$("btnLogin").addEventListener("click", async ()=>{
+  const pw = $("pw").value;
+  $("btnLogin").innerHTML = '<span class="spin"></span>';
+  const r = await api({action:"login", password:pw}).catch(()=>({ok:false}));
+  $("btnLogin").textContent = "Unlock";
+  if(r.ok){
+    isAdmin = true; adminPw = pw;
+    close("ovLogin");
+    $("adminBar").classList.remove("hidden");
+    $("btnExit").classList.remove("hidden");
+    $("btnAdmin").classList.add("hidden");
+    $("tblTitle").textContent = "Inventory items — Admin mode";
+    renderTable();
+    toast("Admin mode unlocked");
+  } else {
+    $("pwErr").classList.add("show");
+  }
+});
+$("btnExit").addEventListener("click",()=>{
+  isAdmin=false; adminPw="";
+  $("adminBar").classList.add("hidden");
+  $("btnExit").classList.add("hidden");
+  $("btnAdmin").classList.remove("hidden");
+  $("tblTitle").textContent = "Inventory items";
+  renderTable();
+});
+
+function who(){
+  const n = $("adminName").value.trim();
+  if(!n){ toast("Enter your name in “Processed by” first"); $("adminName").focus(); return null; }
+  return n;
+}
+
+/* add / edit */
+$("btnAddItem").addEventListener("click",()=>{
+  if(!who()) return;
+  editingId=null;
+  $("itemModalTitle").textContent="Add item";
+  ["fItem","fPart","fUtil","fPrice","fRemarks","fUnits"].forEach(id=>$(id).value="");
+  ["fQty","fUsed","fStocks"].forEach(id=>$(id).value="0");
+  $("fCode").value="SP1"; $("fStatus").value=""; $("itemErr").classList.remove("show");
+  open("ovItem");
+});
+function openEdit(it){
+  editingId=it.id;
+  $("itemModalTitle").textContent="Edit item — "+it.id;
+  $("fCode").value=it.code; $("fItem").value=it.item; $("fPart").value=it.part;
+  $("fUnits").value=it.units; $("fQty").value=it.qty; $("fUsed").value=it.used;
+  $("fStocks").value=it.stocks; $("fUtil").value=it.util; $("fPrice").value=it.price; $("fRemarks").value=it.remarks;
+  $("fStatus").value = isEquipment(it) && !it.status ? "OPERATIONAL" : (it.status||"");
+  $("itemErr").classList.remove("show");
+  open("ovItem");
+}
+$("btnSaveItem").addEventListener("click", async ()=>{
+  const user = who(); if(!user) return;
+  const it = {
+    id: editingId, code: $("fCode").value, item: $("fItem").value.trim(),
+    part: $("fPart").value.trim(), units: $("fUnits").value.trim(),
+    qty: Number($("fQty").value)||0, used: Number($("fUsed").value)||0, stocks: Number($("fStocks").value)||0,
+    price: $("fPrice").value.trim(), util: $("fUtil").value.trim(), remarks: $("fRemarks").value.trim(),
+    status: $("fStatus").value
+  };
+  if(!it.item){ $("itemErr").textContent="Item name is required."; $("itemErr").classList.add("show"); return; }
+  $("btnSaveItem").innerHTML='<span class="spin"></span>';
+  const r = await api({action: editingId?"updateItem":"addItem", password:adminPw, user, item:it}).catch(e=>({ok:false,error:e.message}));
+  $("btnSaveItem").textContent="Save item";
+  if(r.ok){ close("ovItem"); if(isLive) await loadData(); else renderAll(); toast(editingId?"Item updated":"Item added"); }
+  else { $("itemErr").textContent=r.error||"Save failed."; $("itemErr").classList.add("show"); }
+});
+
+/* movement */
+function openMove(it, type){
+  moveId=it.id; moveType=type;
+  $("moveTitle").textContent = type==="USED" ? "Stock out (used)" : "Stock in (received)";
+  $("moveSub").textContent = it.item + " — current stocks: " + fmtN(it.stocks) + " " + it.units;
+  $("mQty").value="1"; $("mLoc").value = type==="USED" ? it.util : "Motorpool"; $("mDetails").value="";
+  $("moveErr").classList.remove("show");
+  open("ovMove");
+}
+$("btnSaveMove").addEventListener("click", async ()=>{
+  const user = who(); if(!user) return;
+  const qty = Number($("mQty").value);
+  if(!qty || qty<=0){ $("moveErr").textContent="Enter a quantity greater than zero."; $("moveErr").classList.add("show"); return; }
+  $("btnSaveMove").innerHTML='<span class="spin"></span>';
+  const r = await api({action:"movement", password:adminPw, user, id:moveId, type:moveType, qty, location:$("mLoc").value.trim(), details:$("mDetails").value.trim()}).catch(e=>({ok:false,error:e.message}));
+  $("btnSaveMove").textContent="Record";
+  if(r.ok){ close("ovMove"); if(isLive) await loadData(); else renderAll(); toast(moveType==="USED"?"Stock out recorded":"Stock in recorded"); }
+  else { $("moveErr").textContent=r.error||"Failed."; $("moveErr").classList.add("show"); }
+});
+
+/* delete */
+function openDel(it){
+  delId=it.id;
+  $("delSub").textContent = "This will permanently remove “"+it.item+"” ("+it.id+") from the inventory sheet. The deletion is logged in Recent activity.";
+  open("ovDel");
+}
+$("btnConfirmDel").addEventListener("click", async ()=>{
+  const user = who(); if(!user) return;
+  $("btnConfirmDel").innerHTML='<span class="spin"></span>';
+  const r = await api({action:"deleteItem", password:adminPw, user, id:delId}).catch(e=>({ok:false,error:e.message}));
+  $("btnConfirmDel").textContent="Delete";
+  close("ovDel");
+  if(r.ok){ if(isLive) await loadData(); else renderAll(); toast("Item deleted"); }
+  else toast(r.error||"Delete failed");
+});
+
+/* table action delegation */
+$("tbody").addEventListener("click",e=>{
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  const it = items.find(x=>x.id===b.dataset.id); if(!it) return;
+  if(b.dataset.act==="edit") openEdit(it);
+  if(b.dataset.act==="del") openDel(it);
+  if(b.dataset.act==="use"){ if(who()) openMove(it,"USED"); }
+  if(b.dataset.act==="recv"){ if(who()) openMove(it,"RECEIVED"); }
+  if(b.dataset.act==="repair" || b.dataset.act==="oper"){
+    const user = who(); if(!user) return;
+    const status = b.dataset.act==="repair" ? "UNDER REPAIR" : "OPERATIONAL";
+    b.innerHTML = '<span class="spin"></span>';
+    api({action:"setStatus", password:adminPw, user, id:it.id, status}).then(async r=>{
+      if(r.ok){ if(isLive) await loadData(); else renderAll(); toast(it.item + " marked " + status.toLowerCase()); }
+      else { toast(r.error||"Failed"); renderTable(); }
+    }).catch(e=>{ toast(e.message); renderTable(); });
+  }
+});
+
+/* search + chips */
+$("q").addEventListener("input", renderTable);
+$("chips").addEventListener("click",e=>{
+  const c = e.target.closest(".chip"); if(!c) return;
+  activeCat = c.dataset.cat; renderChips(); renderTable();
+});
+$("btnRefresh").addEventListener("click",()=>loadData(true));
+
+/* ---------------- reports ---------------- */
+let reportOpen = false, repType = "daily", repMode = "activity", repAnchor = new Date(), allTx = null;
+let lastReport = null; // holds computed data for exports
+
+function rangeFor(){
+  const a = new Date(repAnchor); a.setHours(0,0,0,0);
+  if(repType === "daily"){
+    const s = new Date(a), e = new Date(a); e.setDate(e.getDate()+1); return [s,e];
+  }
+  if(repType === "weekly"){
+    const s = new Date(a); s.setDate(s.getDate() - ((s.getDay()+6)%7)); // Monday
+    const e = new Date(s); e.setDate(e.getDate()+7); return [s,e];
+  }
+  return [new Date(a.getFullYear(),a.getMonth(),1), new Date(a.getFullYear(),a.getMonth()+1,1)];
+}
+function fmtD(d){ return d.toLocaleDateString("en-PH",{month:"long",day:"numeric",year:"numeric"}); }
+function rangeLabel(s,e){
+  if(repType==="daily") return fmtD(s);
+  if(repType==="monthly") return s.toLocaleDateString("en-PH",{month:"long",year:"numeric"});
+  const last = new Date(e); last.setDate(last.getDate()-1);
+  return fmtD(s) + " — " + fmtD(last);
+}
+function shiftPeriod(dir){
+  const a = new Date(repAnchor);
+  if(repType==="daily") a.setDate(a.getDate()+dir);
+  else if(repType==="weekly") a.setDate(a.getDate()+7*dir);
+  else a.setMonth(a.getMonth()+dir);
+  repAnchor = a; renderReport();
+}
+
+async function ensureAllTx(){
+  if(!isLive){ allTx = txs; return; }
+  if(allTx) return;
+  try{
+    const res = await fetch(SCRIPT_URL + "?action=transactions&limit=5000", {redirect:"follow"});
+    const data = await res.json();
+    if(data.ok) allTx = data.transactions; else throw new Error(data.error);
+  }catch(err){ toast("Could not load transactions: "+err.message); allTx = txs; }
+}
+
+function computeReport(){
+  const [s,e] = rangeFor();
+  const list = (allTx||[]).filter(t=>{ const d = new Date(t.ts); return d >= s && d < e; })
+                          .sort((a,b)=> new Date(a.ts) - new Date(b.ts));
+  let out=0, inn=0, added=0, edited=0, deleted=0, statusCh=0;
+  const byItem = new Map(), byWho = new Map();
+  list.forEach(t=>{
+    const q = Number(t.qty)||0;
+    const w = byWho.get(t.user) || {out:0, inn:0, other:0};
+    if(t.action==="USED"){ out+=q; w.out++; }
+    else if(t.action==="RECEIVED"){ inn+=q; w.inn++; }
+    else { w.other++;
+      if(t.action==="ADDED ITEM") added++;
+      else if(t.action==="EDITED ITEM") edited++;
+      else if(t.action==="DELETED ITEM") deleted++;
+      else if(t.action==="STATUS CHANGED") statusCh++;
+    }
+    byWho.set(t.user, w);
+    if(t.action==="USED"||t.action==="RECEIVED"){
+      const m = byItem.get(t.item) || {code:"", out:0, inn:0, n:0};
+      if(t.action==="USED") m.out+=q; else m.inn+=q;
+      m.n++;
+      const live = items.find(x=>x.item===t.item); if(live) m.code = live.code;
+      byItem.set(t.item, m);
+    }
+  });
+  return {s, e, list, out, inn, added, edited, deleted, statusCh, byItem, byWho};
+}
+
+function reportTitle(){
+  const cap = repType.charAt(0).toUpperCase()+repType.slice(1);
+  return cap + (repMode==="stock" ? " Stock Summary" : " Inventory Report");
+}
+
+function renderReport(){
+  const [s,e] = rangeFor();
+  $("repTitle").textContent = reportTitle();
+  const asOf = repMode==="stock" ? "as of " : "";
+  $("repRange").textContent = asOf + rangeLabel(s,e) + "  ·  generated " + new Date().toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"});
+  $("repDate").value = new Date(repAnchor.getTime()-repAnchor.getTimezoneOffset()*60000).toISOString().slice(0,10);
+
+  const R = computeReport();
+  lastReport = R;
+
+  $("repActivity").classList.toggle("hidden", repMode!=="activity");
+  $("repStock").classList.toggle("hidden", repMode!=="stock");
+
+  if(repMode==="activity") renderActivity(R); else renderStock(R);
+}
+
+function renderActivity(R){
+  $("repCards").innerHTML = `
+    <div class="rep-card"><div class="n">${R.list.length}</div><div class="l">Transactions</div></div>
+    <div class="rep-card c-out"><div class="n">${fmtN(R.out)}</div><div class="l">Total stock out</div></div>
+    <div class="rep-card c-in"><div class="n">${fmtN(R.inn)}</div><div class="l">Total stock in</div></div>
+    <div class="rep-card"><div class="n">${R.added}</div><div class="l">Items added</div></div>
+    <div class="rep-card"><div class="n">${R.edited}</div><div class="l">Items edited</div></div>
+    <div class="rep-card"><div class="n">${R.deleted}</div><div class="l">Items deleted</div></div>
+    <div class="rep-card c-rep"><div class="n">${R.statusCh}</div><div class="l">Status changes</div></div>`;
+
+  const moves = [...R.byItem.entries()].sort((a,b)=>(b[1].out+b[1].inn)-(a[1].out+a[1].inn));
+  $("repMoveBody").innerHTML = moves.map(([name,m])=>`<tr>
+      <td>${m.code?`<span class="code-tag code-${esc(m.code)}">${esc(m.code)}</span>`:""}</td>
+      <td class="item-name">${esc(name)}</td>
+      <td class="num-cell" style="color:var(--out)">${m.out?("−"+fmtN(m.out)):"—"}</td>
+      <td class="num-cell" style="color:var(--ok)">${m.inn?("+"+fmtN(m.inn)):"—"}</td>
+      <td class="num-cell">${m.n}</td></tr>`).join("");
+  $("repMoveEmpty").classList.toggle("hidden", moves.length>0);
+
+  $("repWhoBody").innerHTML = [...R.byWho.entries()].sort((a,b)=>(b[1].out+b[1].inn+b[1].other)-(a[1].out+a[1].inn+a[1].other))
+    .map(([name,w])=>`<tr><td class="item-name">${esc(name)}</td>
+      <td class="num-cell">${w.out}</td><td class="num-cell">${w.inn}</td>
+      <td class="num-cell">${w.other}</td><td class="num-cell"><b>${w.out+w.inn+w.other}</b></td></tr>`).join("");
+
+  $("repLogBody").innerHTML = R.list.map(t=>`<tr>
+      <td class="cell-dim" style="white-space:nowrap">${fmtWhen(t.ts)}</td>
+      <td>${esc(t.user)}</td>
+      <td><span class="badge ${t.action==="USED"?"b-out":t.action==="RECEIVED"?"b-ok":"b-warn"}">${esc(actionVerb(t.action))}</span></td>
+      <td class="item-name">${esc(t.item)}</td>
+      <td class="num-cell">${t.qty?esc(t.qty):"—"}</td>
+      <td class="cell-dim">${esc(t.location)}</td>
+      <td class="cell-dim">${esc(t.details)}</td></tr>`).join("");
+  $("repLogEmpty").classList.toggle("hidden", R.list.length>0);
+}
+
+const CAT_ORDER = ["SP1","ES2","VS3","VL4","TF5","TOOLS","MACHINES"];
+function sortedItemsForStock(){
+  return [...items].sort((a,b)=>{
+    const ca = CAT_ORDER.indexOf(a.code), cb = CAT_ORDER.indexOf(b.code);
+    if(ca!==cb) return (ca<0?99:ca)-(cb<0?99:cb);
+    return a.item.localeCompare(b.item);
+  });
+}
+function renderStock(R){
+  let ok=0, low=0, out=0, rep=0;
+  items.forEach(it=>{
+    if(isEquipment(it)){ if(String(it.status||"").toUpperCase()==="UNDER REPAIR") rep++; else ok++; return; }
+    const s = Number(it.stocks)||0;
+    if(s<=0) out++; else if(s<=2) low++; else ok++;
+  });
+  $("repStockCards").innerHTML = `
+    <div class="rep-card"><div class="n">${items.length}</div><div class="l">Items tracked</div></div>
+    <div class="rep-card c-in"><div class="n">${ok}</div><div class="l">In stock / operational</div></div>
+    <div class="rep-card"><div class="n">${low}</div><div class="l">Low stock (≤2)</div></div>
+    <div class="rep-card c-out"><div class="n">${out}</div><div class="l">Out of stock</div></div>
+    <div class="rep-card c-rep"><div class="n">${rep}</div><div class="l">Under repair</div></div>
+    <div class="rep-card c-out"><div class="n">${fmtN(R.out)}</div><div class="l">Stock out this period</div></div>
+    <div class="rep-card c-in"><div class="n">${fmtN(R.inn)}</div><div class="l">Stock in this period</div></div>`;
+
+  $("repStockBody").innerHTML = sortedItemsForStock().map(it=>{
+    const m = R.byItem.get(it.item) || {out:0, inn:0};
+    const [stxt, scls] = statusOf(it);
+    return `<tr>
+      <td><span class="code-tag code-${esc(it.code)}">${esc(it.code)}</span></td>
+      <td><div class="item-name">${esc(it.item)}</div>${it.part?`<div class="item-part">P/N ${esc(it.part)}</div>`:""}</td>
+      <td class="cell-dim">${esc(it.units)}</td>
+      <td class="num-cell">${fmtN(it.qty)}</td>
+      <td class="num-cell">${fmtN(it.used)}</td>
+      <td class="num-cell"><b>${fmtN(it.stocks)}</b></td>
+      <td class="num-cell" style="color:var(--out)">${m.out?("−"+fmtN(m.out)):"—"}</td>
+      <td class="num-cell" style="color:var(--ok)">${m.inn?("+"+fmtN(m.inn)):"—"}</td>
+      <td><span class="badge ${scls}">${stxt}</span></td>
+      <td class="cell-dim">${esc(it.util)}</td>
+      <td class="cell-dim">${esc(it.remarks)}</td></tr>`;
+  }).join("");
+}
+
+/* ---------- exports ---------- */
+function reportFileBase(){
+  const [s] = rangeFor();
+  const stamp = new Date(s.getTime()-s.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  return "MIMS_" + (repMode==="stock"?"StockSummary":"Activity") + "_" + repType + "_" + stamp;
+}
+function periodWord(){ return repType.charAt(0).toUpperCase()+repType.slice(1); }
+function periodLine(){
+  const [s,e] = rangeFor();
+  if(repType==="monthly") return "Month of " + s.toLocaleDateString("en-PH",{month:"long",year:"numeric"}).toUpperCase();
+  if(repType==="weekly"){ const last=new Date(e); last.setDate(last.getDate()-1); return "Week of " + fmtD(s) + " to " + fmtD(last); }
+  return "As of " + fmtD(s);
+}
+const LEGEND_TEXT = "LEGEND : SP = SPAREPARTS, ES = ELECTRICAL SUPPLIES, VS = VARIOUS SUPPLIES, VL = VARIOUS LUBRICANTS, TF = TIRE & FLAP   TOOLS, MACHINES";
+
+function buildSheetData(){ // used only by CSV fallback
+  const out = [
+    ["Republic of the Philippines"],["Province of Ifugao"],["OFFICE OF THE PROVINCIAL ENGINEER"],
+    ["Motorpool"],["Capitol, Lagawe, Ifugao"],
+    ["Motorpool Section "+periodWord()+" Inventory of Spare Parts, Supplies, Lubricants and Tires"],
+    [periodLine()],[LEGEND_TEXT],[]
+  ];
+  if(repMode==="stock"){
+    out.push(["No.","Code","Item","Part No.","Unit","Qty","Used","Stocks","Status","For / Equipment","Remarks"]);
+    let n=1;
+    sortedItemsForStock().forEach(it=>out.push([n++, it.code, it.item, it.part, it.units,
+      Number(it.qty)||0, Number(it.used)||0, Number(it.stocks)||0, statusOf(it)[0], it.util, it.remarks]));
+  } else {
+    const R = lastReport || computeReport();
+    out.push(["SUMMARY"],["Transactions", R.list.length],["Total stock out", R.out],["Total stock in", R.inn],
+             ["Items added", R.added],["Items edited", R.edited],["Items deleted", R.deleted],["Status changes", R.statusCh],[]);
+    out.push(["ITEM MOVEMENT SUMMARY"],["Code","Item","Stock Out","Stock In","Transactions"]);
+    [...R.byItem.entries()].sort((a,b)=>(b[1].out+b[1].inn)-(a[1].out+a[1].inn))
+      .forEach(([name,m])=>out.push([m.code, name, m.out, m.inn, m.n]));
+    out.push([],["ACTIVITY BY PERSONNEL"],["Personnel","Stock Out","Stock In","Other Actions","Total"]);
+    [...R.byWho.entries()].forEach(([name,w])=>out.push([name, w.out, w.inn, w.other, w.out+w.inn+w.other]));
+    out.push([],["TRANSACTION LOG"],["Date & Time","Processed By","Action","Item","Qty","Where","Notes"]);
+    R.list.forEach(t=>out.push([fmtWhen(t.ts), t.user, actionVerb(t.action), t.item, t.qty, t.location, t.details]));
+  }
+  return out;
+}
+
+/* ----- ExcelJS styled export (matches the official inventory template) ----- */
+const XL_FONT = (size,bold)=>({name:"Calibri", size:size||11, bold:!!bold});
+const XL_THIN = {style:"thin"};
+const XL_BOX = {top:XL_THIN,left:XL_THIN,right:XL_THIN,bottom:XL_THIN};
+const XL_FILL = argb => ({type:"pattern", pattern:"solid", fgColor:{argb}});
+function xlBorderRow(ws, row, c1, c2){ for(let c=c1;c<=c2;c++) ws.getCell(row,c).border = XL_BOX; }
+
+function buildStockSheet(wb){
+  const ws = wb.addWorksheet("Stock Summary", {views:[{state:"frozen", ySplit:9}],
+    pageSetup:{orientation:"portrait", fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:0.3,right:0.3,top:0.4,bottom:0.4,header:0.2,footer:0.2}}});
+  ws.columns = [{width:6},{width:11.4},{width:43.75},{width:14.9},{width:9.25},
+                {width:7.4},{width:8.9},{width:10.9},{width:18},{width:27.4},{width:26.25}];
+  const titles = ["Republic of the Philippines","Province of Ifugao","OFFICE OF THE PROVINCIAL ENGINEER","Motorpool","Capitol, Lagawe, Ifugao"];
+  titles.forEach((t,i)=>{
+    const r=i+1; ws.mergeCells(r,2,r,11);
+    const c=ws.getCell(r,2); c.value=t; c.font=XL_FONT(16,true); c.alignment={horizontal:"center",wrapText:true};
+  });
+  ws.mergeCells(6,1,6,11);
+  let c=ws.getCell(6,1); c.value="Motorpool Section "+periodWord()+" Inventory of Spare Parts, Supplies, Lubricants and Tires for the ";
+  c.font=XL_FONT(13,false); c.alignment={horizontal:"center",wrapText:true}; c.fill=XL_FILL("FFD9E1F2"); xlBorderRow(ws,6,1,11);
+  ws.mergeCells(7,1,7,11);
+  c=ws.getCell(7,1); c.value=periodLine(); c.font=XL_FONT(13,true); c.alignment={horizontal:"center"}; c.fill=XL_FILL("FFB4C6E7"); xlBorderRow(ws,7,1,11);
+  ws.mergeCells(8,2,8,11);
+  c=ws.getCell(8,2); c.value=LEGEND_TEXT; c.font=XL_FONT(10,false); c.alignment={horizontal:"center",wrapText:true}; c.fill=XL_FILL("FF92D050"); xlBorderRow(ws,8,2,11);
+  const heads=["No.","Code","Item","Part No.","Unit","Qty","Used","Stocks","Status","For / Equipment","Remarks"];
+  heads.forEach((h,i)=>{ const cell=ws.getCell(9,i+1); cell.value=h; cell.font=XL_FONT(11,true);
+    cell.fill=XL_FILL("FF92D050"); cell.border=XL_BOX; cell.alignment={horizontal:(i>=5&&i<=7)?"center":(i===0?"center":"left"),vertical:"center",wrapText:true}; });
+  let row=10, n=1;
+  sortedItemsForStock().forEach(it=>{
+    const vals=[n, it.code, it.item, it.part||"", it.units||"", Number(it.qty)||0, Number(it.used)||0, Number(it.stocks)||0, statusOf(it)[0], it.util||"", it.remarks||""];
+    vals.forEach((v,i)=>{ const cell=ws.getCell(row,i+1); cell.value=v; cell.font=XL_FONT(11,false); cell.border=XL_BOX;
+      cell.alignment={vertical:"center", horizontal:(i===0||(i>=5&&i<=7))?"center":"left", wrapText:(i===2||i===8||i===9||i===10)}; });
+    row++; n++;
+  });
+  ws.getRow(9).height=22;
+}
+
+function xlSection(ws, startCol, title, headers, rows, widthsKey){
+  const r0 = ws.lastRow ? ws.lastRow.number+2 : 1;
+  ws.mergeCells(r0,1,r0,headers.length);
+  let c=ws.getCell(r0,1); c.value=title; c.font=XL_FONT(12,true); c.fill=XL_FILL("FF20262B"); c.font={name:"Calibri",size:12,bold:true,color:{argb:"FFFFFFFF"}};
+  c.alignment={horizontal:"left"}; xlBorderRow(ws,r0,1,headers.length);
+  const hr=r0+1;
+  headers.forEach((h,i)=>{ const cell=ws.getCell(hr,i+1); cell.value=h; cell.font=XL_FONT(11,true); cell.fill=XL_FILL("FF92D050"); cell.border=XL_BOX; });
+  let rr=hr+1;
+  rows.forEach(rowVals=>{ rowVals.forEach((v,i)=>{ const cell=ws.getCell(rr,i+1); cell.value=v; cell.font=XL_FONT(11,false); cell.border=XL_BOX; }); rr++; });
+}
+
+function buildActivitySheet(wb){
+  const R = lastReport || computeReport();
+  const ws = wb.addWorksheet("Activity", {pageSetup:{orientation:"landscape", fitToPage:true, fitToWidth:1, fitToHeight:0}});
+  ws.columns=[{width:22},{width:34},{width:14},{width:14},{width:12},{width:24},{width:30}];
+  const titles=["Republic of the Philippines","Province of Ifugao","OFFICE OF THE PROVINCIAL ENGINEER","Motorpool · Capitol, Lagawe, Ifugao"];
+  titles.forEach((t,i)=>{ const r=i+1; ws.mergeCells(r,1,r,7); const c=ws.getCell(r,1); c.value=t; c.font=XL_FONT(i===2?15:13,true); c.alignment={horizontal:"center"}; });
+  ws.mergeCells(5,1,5,7); let c=ws.getCell(5,1); c.value=periodWord()+" Inventory Activity Report"; c.font=XL_FONT(14,true); c.alignment={horizontal:"center"};
+  ws.mergeCells(6,1,6,7); c=ws.getCell(6,1); c.value=periodLine(); c.font=XL_FONT(11,false); c.alignment={horizontal:"center"};
+  ws.addRow([]);
+  ws.addRow(["Transactions", R.list.length, "Stock out", R.out, "Stock in", R.inn]);
+  ws.addRow(["Items added", R.added, "Edited", R.edited, "Deleted", R.deleted, "Status changes "+R.statusCh]);
+  xlSection(ws, 1, "ITEM MOVEMENT SUMMARY", ["Code","Item","Stock Out","Stock In","Transactions"],
+    [...R.byItem.entries()].sort((a,b)=>(b[1].out+b[1].inn)-(a[1].out+a[1].inn)).map(([n,m])=>[m.code,n,m.out,m.inn,m.n]));
+  xlSection(ws, 1, "ACTIVITY BY PERSONNEL", ["Personnel","Stock Out","Stock In","Other Actions","Total"],
+    [...R.byWho.entries()].map(([n,w])=>[n,w.out,w.inn,w.other,w.out+w.inn+w.other]));
+  xlSection(ws, 1, "TRANSACTION LOG", ["Date & Time","Processed By","Action","Item","Qty","Where","Notes"],
+    R.list.map(t=>[fmtWhen(t.ts),t.user,actionVerb(t.action),t.item,t.qty,t.location,t.details]));
+}
+
+async function exportExcel(){
+  if(typeof ExcelJS === "undefined"){ exportCSVfallback(); return; }
+  $("repExcel").innerHTML='<span class="spin"></span>';
+  try{
+    const wb = new ExcelJS.Workbook();
+    if(repMode==="stock") buildStockSheet(wb); else buildActivitySheet(wb);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=reportFileBase()+".xlsx"; a.click();
+    toast("Excel file downloaded");
+  }catch(err){ console.error(err); toast("Excel export issue — downloading CSV instead"); exportCSVfallback(); }
+  finally{ $("repExcel").innerHTML="⬇ Excel"; }
+}
+function exportCSVfallback(){
+  const data = buildSheetData();
+  const csv = data.map(r=>r.map(c=>{
+    const v = c==null?"":String(c);
+    return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+  }).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = reportFileBase()+".csv"; a.click();
+  toast("CSV downloaded (opens in Excel)");
+}
+
+function exportPDF(){
+  if(!window.jspdf || !window.jspdf.jsPDF){ toast("PDF library not loaded — using Print instead"); window.print(); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation: repMode==="stock"?"landscape":"portrait", unit:"pt", format:"a4"});
+  const W = doc.internal.pageSize.getWidth();
+  let y = 38;
+  const center = (txt,size,bold)=>{ doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(size); doc.text(txt, W/2, y, {align:"center"}); y+=size+4; };
+  const [s,e] = rangeFor();
+  center("Republic of the Philippines",10); center("Province of Ifugao",10);
+  center("OFFICE OF THE PROVINCIAL ENGINEER",11,true); center("Motorpool Section · Capitol, Lagawe, Ifugao",9);
+  y+=6; center(reportTitle(),15,true);
+  center((repMode==="stock"?"As of ":"")+rangeLabel(s,e)+"  ·  generated "+new Date().toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}),9);
+  y+=6;
+  const R = lastReport || computeReport();
+  const tbl = (head, body, startY)=>{ doc.autoTable({head:[head], body, startY, styles:{fontSize:7.5,cellPadding:2}, headStyles:{fillColor:[32,38,43]}, margin:{left:32,right:32}}); return doc.lastAutoTable.finalY; };
+
+  if(repMode==="stock"){
+    const body = sortedItemsForStock().map(it=>{
+      const m = R.byItem.get(it.item) || {out:0,inn:0};
+      return [it.code, it.item, it.units, fmtN(it.qty), fmtN(it.used), fmtN(it.stocks),
+              m.out?"-"+fmtN(m.out):"", m.inn?"+"+fmtN(m.inn):"", statusOf(it)[0], it.util, it.remarks];
+    });
+    y = tbl(["Code","Item","Unit","Qty","Used","Stocks","Out","In","Status","For/Equipment","Remarks"], body, y);
+  } else {
+    doc.setFontSize(9); doc.setFont("helvetica","normal");
+    doc.text(`Transactions: ${R.list.length}    Stock out: ${fmtN(R.out)}    Stock in: ${fmtN(R.inn)}    Added: ${R.added}   Edited: ${R.edited}   Deleted: ${R.deleted}   Status changes: ${R.statusCh}`, 32, y); y+=14;
+    const moves = [...R.byItem.entries()].sort((a,b)=>(b[1].out+b[1].inn)-(a[1].out+a[1].inn)).map(([n,m])=>[m.code,n,m.out||"",m.inn||"",m.n]);
+    if(moves.length) y = tbl(["Code","Item","Stock Out","Stock In","Txns"], moves, y) + 12;
+    const who = [...R.byWho.entries()].map(([n,w])=>[n,w.out,w.inn,w.other,w.out+w.inn+w.other]);
+    if(who.length) y = tbl(["Personnel","Out","In","Other","Total"], who, y) + 12;
+    const log = R.list.map(t=>[fmtWhen(t.ts),t.user,actionVerb(t.action),t.item,t.qty||"",t.location,t.details]);
+    if(log.length) y = tbl(["Date & Time","By","Action","Item","Qty","Where","Notes"], log, y);
+  }
+  // signature lines
+  const fy = (doc.lastAutoTable? doc.lastAutoTable.finalY : y) + 46;
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  const colL = repMode==="stock"? W*0.28 : W*0.30, colR = repMode==="stock"? W*0.72 : W*0.70;
+  doc.line(colL-70, fy, colL+70, fy); doc.line(colR-70, fy, colR+70, fy);
+  doc.text("Prepared by", colL, fy+14, {align:"center"}); doc.text("Noted by", colR, fy+14, {align:"center"});
+  doc.save(reportFileBase()+".pdf");
+  toast("PDF downloaded");
+}
+
+async function toggleReports(open){
+  reportOpen = open;
+  document.body.classList.toggle("report-mode", open);
+  ["reportView"].forEach(id=>$(id).classList.toggle("hidden", !open));
+  document.querySelector(".stats").classList.toggle("hidden", open);
+  document.querySelector(".controls").classList.toggle("hidden", open);
+  document.querySelector(".grid").classList.toggle("hidden", open);
+  $("btnReports").textContent = open ? "✕ Close reports" : "📊 Reports";
+  if(open){
+    $("btnReports").innerHTML = '<span class="spin"></span>';
+    await ensureAllTx();
+    $("btnReports").textContent = "✕ Close reports";
+    renderReport();
+  }
+}
+$("btnReports").addEventListener("click",()=>toggleReports(!reportOpen));
+$("repMode").addEventListener("change",e=>{ repMode=e.target.value; renderReport(); });
+$("repType").addEventListener("change",e=>{ repType=e.target.value; renderReport(); });
+$("repPrev").addEventListener("click",()=>shiftPeriod(-1));
+$("repNext").addEventListener("click",()=>shiftPeriod(1));
+$("repToday").addEventListener("click",()=>{ repAnchor=new Date(); renderReport(); });
+$("repDate").addEventListener("change",e=>{ const d=new Date(e.target.value+"T00:00:00"); if(!isNaN(d)){ repAnchor=d; renderReport(); } });
+$("repPrint").addEventListener("click",()=>window.print());
+$("repExcel").addEventListener("click",exportExcel);
+$("repPdf").addEventListener("click",exportPDF);
+
+/* init */
+if(isLive){ $("modeTag").textContent="LIVE · GOOGLE SHEET"; $("modeTag").className="mode-tag mode-live"; }
+loadData(false);
+</script>
+</body>
+</html>
