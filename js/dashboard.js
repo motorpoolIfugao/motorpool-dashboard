@@ -1,116 +1,145 @@
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-const role = localStorage.getItem("role");
+const fullName = localStorage.getItem("fullName") || "";
+const role = localStorage.getItem("role") || "";
 
-if(role !== "Admin" && role !== "Supervisor"){
-    document.getElementById("inventoryBtn").style.display = "none";
+const userInfo = document.getElementById("userInfo");
+
+if(userInfo){
+    userInfo.innerText =
+        "Logged in as: " +
+        fullName +
+        " (" +
+        role +
+        ")";
 }
-
-if(localStorage.getItem("role") !== "Admin"){
-    document.getElementById("taskManagementBtn").style.display = "none";
-}
-
-const userRole = localStorage.getItem("role");
-
-if(userRole !== "Admin"){
-    document.getElementById("adminBtn").style.display = "none";
-}
-
-document.getElementById("userInfo").innerText =
-    "Logged in as: " +
-    localStorage.getItem("fullName") +
-    " (" +
-    localStorage.getItem("role") +
-    ")";
 
 loadTasks();
 
 async function loadTasks(){
 
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    try{
 
-    const tableBody =
-    document.getElementById("tableBody");
+        const response =
+            await fetch(apiUrl + "?action=tasks");
 
-    tableBody.innerHTML = "";
+        const data =
+            await response.json();
 
-    let planned = 0;
-    let ongoing = 0;
-    let finished = 0;
+        const tableBody =
+            document.getElementById("tableBody");
 
-    data.forEach(task => {
+        tableBody.innerHTML = "";
 
-tableBody.innerHTML += `
-<tr>
-    <td>${task["No."] || ""}</td>
-    <td>${task["Staff Name"] || ""}</td>
-    <td>${task["Position"] || ""}</td>
-    <td>${task["Vehicle/Equipment"] || ""}</td>
-    <td>${task["Target Activity"] || ""}</td>
-    <td>${formatDate(task["Start Date"])}</td>
-    <td>${formatDate(task["Target Completion"])}</td>
+        let planned = 0;
+        let ongoing = 0;
+        let finished = 0;
 
-    <td>
-        <span class="status ${task["Status"] || ""}">
-            ${task["Status"] || ""}
-        </span>
-    </td>
+        if(data.length === 0){
 
-    <td>${task["% Completion"] || ""}</td>
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="11" style="text-align:center;">
+                        No records found.
+                    </td>
+                </tr>
+            `;
 
-    <td>${task["Remarks"] || ""}</td>
+            updateSummary(0, 0, 0, 0);
+            return;
+        }
 
-    <td>
-        <button onclick="openUpdate(${task["No."]})">
-            ✏️ Update
-        </button>
-    </td>
-</tr>
-`;
+        data.forEach(task => {
 
-        if(task["Status"] === "Planned")
-            planned++;
+            const status =
+                task["Status"] || "";
 
-        if(task["Status"] === "Ongoing")
-            ongoing++;
+            const statusClass =
+                status.replaceAll(" ", "-");
 
-        if(task["Status"] === "Finished")
-            finished++;
-    });
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${task["No."] || ""}</td>
+                    <td>${task["Staff Name"] || ""}</td>
+                    <td>${task["Position"] || ""}</td>
+                    <td>${task["Vehicle/Equipment"] || ""}</td>
+                    <td>${task["Target Activity"] || ""}</td>
+                    <td>${formatDate(task["Start Date"])}</td>
+                    <td>${formatDate(task["Target Completion"])}</td>
 
-    document.getElementById("totalTasks")
-        .innerText = data.length;
+                    <td>
+                        <span class="status ${statusClass}">
+                            ${status}
+                        </span>
+                    </td>
 
-    document.getElementById("plannedTasks")
-        .innerText = planned;
+                    <td>${task["% Completion"] || ""}</td>
+                    <td>${task["Remarks"] || ""}</td>
 
-    document.getElementById("ongoingTasks")
-        .innerText = ongoing;
+                    <td>
+                        <button onclick="openUpdate('${task["No."]}')">
+                            Update
+                        </button>
+                    </td>
+                </tr>
+            `;
 
-    document.getElementById("finishedTasks")
-        .innerText = finished;
+            if(status === "Planned") planned++;
+            if(status === "Ongoing") ongoing++;
+            if(status === "Finished") finished++;
+
+        });
+
+        updateSummary(data.length, planned, ongoing, finished);
+
+    }catch(error){
+
+        console.error("Dashboard loading error:", error);
+
+        const tableBody =
+            document.getElementById("tableBody");
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="11" style="text-align:center;color:red;">
+                    Error loading dashboard data.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function updateSummary(total, planned, ongoing, finished){
+
+    document.getElementById("totalTasks").innerText = total;
+    document.getElementById("plannedTasks").innerText = planned;
+    document.getElementById("ongoingTasks").innerText = ongoing;
+    document.getElementById("finishedTasks").innerText = finished;
 }
 
 function filterTable(){
 
-    let input =
-    document.getElementById("search")
-    .value.toUpperCase();
+    const searchInput =
+        document.getElementById("search");
 
-    let rows =
-    document.querySelectorAll("#taskTable tbody tr");
+    if(!searchInput) return;
 
-    rows.forEach(row=>{
+    const input =
+        searchInput.value.toUpperCase();
 
-        let text =
-        row.innerText.toUpperCase();
+    const rows =
+        document.querySelectorAll("#taskTable tbody tr");
+
+    rows.forEach(row => {
+
+        const text =
+            row.innerText.toUpperCase();
 
         row.style.display =
-        text.includes(input)
-        ? ""
-        : "none";
+            text.includes(input)
+            ? ""
+            : "none";
 
     });
 }
@@ -121,15 +150,17 @@ function formatDate(dateString){
 
     const date = new Date(dateString);
 
+    if(isNaN(date)) return dateString;
+
     return date.toLocaleDateString("en-PH",{
         year:"numeric",
         month:"short",
         day:"numeric"
     });
 }
+
 function openUpdate(taskNo){
 
     window.location.href =
-    `update.html?task=${taskNo}`;
-
+        `update.html?task=${taskNo}`;
 }
