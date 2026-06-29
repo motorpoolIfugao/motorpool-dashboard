@@ -187,6 +187,14 @@ tr:hover td.actions-cell{background:#FAFBF8}
 </head>
 <body>
 
+<body>
+
+<div class="dashboard-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <div class="main-content inventory-page">
+
 <header class="plate">
   <div class="plate-inner">
     <div class="plate-id">
@@ -196,7 +204,6 @@ tr:hover td.actions-cell{background:#FAFBF8}
     </div>
     <div class="plate-actions">
       <span id="modeTag" class="mode-tag mode-demo">DEMO DATA</span>
-      <button class="btn btn-ghost" onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
       <button class="btn btn-ghost" id="btnRefresh" title="Reload data from Google Sheet">⟳ Refresh</button>
       <button class="btn btn-ghost" id="btnReports">📊 Reports</button>
       <button class="btn btn-safety" id="btnAdmin">🔒 Admin</button>
@@ -345,6 +352,8 @@ tr:hover td.actions-cell{background:#FAFBF8}
     </div>
   </section>
 </main>
+</div>
+</div>
 
 <!-- password gate -->
 <div class="overlay" id="ovLogin">
@@ -436,6 +445,14 @@ tr:hover td.actions-cell{background:#FAFBF8}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<script src="js/auth-check.js?v=4"></script>
+
+<script>
+allowRoles(["Admin", "Supervisor"]);
+</script>
+
+<script src="js/sidebar.js?v=1"></script>
 
 <script>
 /* =====================================================================

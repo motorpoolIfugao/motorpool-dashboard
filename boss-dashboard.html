@@ -3,49 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <title>Motorpool Executive Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link rel="stylesheet" href="css/gov-theme.css?v=1">
+
 <style>
-body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    margin:20px;
+.executive-card{
+    background:white;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-.header{
+.report-header{
     text-align:center;
     margin-bottom:20px;
 }
 
-.header h1{
-    color:#1b5e20;
+.report-header h2{
+    color:#0b4f2f;
     margin-bottom:5px;
+    text-transform:uppercase;
+}
+
+.report-header h3{
+    margin:5px 0;
 }
 
 .controls{
-    background:white;
+    background:#eef7f1;
     padding:15px;
     border-radius:10px;
     margin-bottom:20px;
-    text-align:center;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
 }
 
 .controls input,
 .controls button{
     padding:10px;
-    margin:5px;
 }
 
 button{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
     border:none;
-    border-radius:5px;
+    border-radius:6px;
     cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#083b24;
 }
 
 .summary{
     display:grid;
-    grid-template-columns:repeat(6,1fr);
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:12px;
     margin-bottom:20px;
 }
@@ -56,12 +74,23 @@ button{
     text-align:center;
     border-radius:10px;
     box-shadow:0 2px 8px rgba(0,0,0,.12);
+    border-top:4px solid #0b4f2f;
 }
 
 .card h2{
     margin:0;
-    color:#1b5e20;
+    color:#0b4f2f;
     font-size:32px;
+}
+
+.card p{
+    margin:8px 0 0;
+    color:#6b7280;
+    font-weight:bold;
+}
+
+.table-wrapper{
+    overflow-x:auto;
 }
 
 table{
@@ -72,8 +101,10 @@ table{
 }
 
 th{
-    background:#1b5e20;
+    background:#0b4f2f;
     color:white;
+    text-transform:uppercase;
+    font-size:12px;
 }
 
 th,td{
@@ -84,10 +115,11 @@ th,td{
 
 .status{
     padding:5px 10px;
-    border-radius:5px;
+    border-radius:20px;
     color:white;
     font-weight:bold;
     display:inline-block;
+    font-size:12px;
 }
 
 .status.Planned{
@@ -111,17 +143,38 @@ th,td{
 }
 
 @media print{
+    .sidebar,
+    .top-header,
     .controls{
-        display:none;
+        display:none !important;
+    }
+
+    .main-content{
+        margin-left:0 !important;
+    }
+
+    .content-area{
+        padding:0 !important;
     }
 
     body{
         background:white;
+        margin:10px;
+    }
+
+    .executive-card{
+        box-shadow:none;
+        border:none;
+        padding:0;
     }
 
     .card{
         box-shadow:none;
         border:1px solid #ccc;
+    }
+
+    table{
+        font-size:11px;
     }
 }
 </style>
@@ -129,75 +182,107 @@ th,td{
 
 <body>
 
-<div class="header">
-    <h1>Motorpool Executive Dashboard</h1>
-    <h3>Weekly Work Plan and Accomplishment Summary</h3>
-    <p id="periodText"></p>
+<div class="dashboard-layout">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="main-content">
+
+        <header class="top-header">
+            <h1>Executive Dashboard</h1>
+            <p>Summary view for weekly work plan and accomplishment monitoring.</p>
+        </header>
+
+        <section class="content-area">
+
+            <div class="executive-card">
+
+                <div class="report-header">
+                    <h2>Motorpool Executive Dashboard</h2>
+                    <h3>Weekly Work Plan and Accomplishment Summary</h3>
+                    <p id="periodText"></p>
+                </div>
+
+                <div class="controls">
+                    <label>From:</label>
+                    <input type="date" id="fromDate">
+
+                    <label>To:</label>
+                    <input type="date" id="toDate">
+
+                    <button onclick="loadBossDashboard()">Generate</button>
+                    <button onclick="window.print()">Print</button>
+                    <button onclick="downloadExcel()">Download Excel</button>
+                </div>
+
+                <div class="summary">
+
+                    <div class="card">
+                        <h2 id="totalTasks">0</h2>
+                        <p>Total Tasks</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="finishedTasks">0</h2>
+                        <p>Finished</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="ongoingTasks">0</h2>
+                        <p>Ongoing</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="delayedTasks">0</h2>
+                        <p>Delayed</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="waitingTasks">0</h2>
+                        <p>Waiting Parts</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="completionRate">0%</h2>
+                        <p>Completion Rate</p>
+                    </div>
+
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Vehicle/Equipment</th>
+                                <th>Target Activity</th>
+                                <th>Actual Accomplishment</th>
+                                <th>Status</th>
+                                <th>% Completion</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="dashboardBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
 </div>
 
-<div class="controls">
-    <label>From:</label>
-    <input type="date" id="fromDate">
+<script src="js/auth-check.js?v=4"></script>
 
-    <label>To:</label>
-    <input type="date" id="toDate">
+<script>
+allowRoles(["Admin", "Supervisor", "Viewer"]);
+</script>
 
-    <button onclick="loadBossDashboard()">Generate</button>
-    <button onclick="window.print()">Print</button>
-    <button onclick="downloadExcel()">Download Excel</button>
-</div>
-
-<div class="summary">
-
-    <div class="card">
-        <h2 id="totalTasks">0</h2>
-        <p>Total Tasks</p>
-    </div>
-
-    <div class="card">
-        <h2 id="finishedTasks">0</h2>
-        <p>Finished</p>
-    </div>
-
-    <div class="card">
-        <h2 id="ongoingTasks">0</h2>
-        <p>Ongoing</p>
-    </div>
-
-    <div class="card">
-        <h2 id="delayedTasks">0</h2>
-        <p>Delayed</p>
-    </div>
-
-    <div class="card">
-        <h2 id="waitingTasks">0</h2>
-        <p>Waiting Parts</p>
-    </div>
-
-    <div class="card">
-        <h2 id="completionRate">0%</h2>
-        <p>Completion Rate</p>
-    </div>
-
-</div>
-
-<table>
-<thead>
-<tr>
-    <th>No.</th>
-    <th>Staff</th>
-    <th>Vehicle/Equipment</th>
-    <th>Target Activity</th>
-    <th>Actual Accomplishment</th>
-    <th>Status</th>
-    <th>% Completion</th>
-    <th>Remarks</th>
-</tr>
-</thead>
-
-<tbody id="dashboardBody">
-</tbody>
-</table>
+<script src="js/sidebar.js?v=1"></script>
 
 <script>
 const apiUrl =
