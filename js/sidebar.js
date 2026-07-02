@@ -17,7 +17,7 @@
             roles: ["Admin", "Supervisor", "Mechanic", "Viewer"]
         },
         {
-            title: "Admin Panel",
+            title: "Assign Staff Task",
             href: "admin.html",
             roles: ["Admin"]
         },
