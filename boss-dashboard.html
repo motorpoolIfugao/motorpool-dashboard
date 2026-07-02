@@ -14,21 +14,22 @@
     border-radius:12px;
     border:1px solid #d9e2dc;
     box-shadow:0 4px 12px rgba(0,0,0,.08);
+    margin-bottom:24px;
 }
 
-.report-header{
+.executive-card h2{
+    margin-top:0;
+    color:#0b4f2f;
+    text-transform:uppercase;
+}
+
+.report-title{
     text-align:center;
     margin-bottom:20px;
 }
 
-.report-header h2{
-    color:#0b4f2f;
+.report-title h2{
     margin-bottom:5px;
-    text-transform:uppercase;
-}
-
-.report-header h3{
-    margin:5px 0;
 }
 
 .controls{
@@ -40,7 +41,6 @@
     flex-wrap:wrap;
     gap:10px;
     align-items:center;
-    justify-content:center;
 }
 
 .controls input,
@@ -61,6 +61,15 @@ button:hover{
     background:#083b24;
 }
 
+.print-btn{
+    background:#1f3a5f;
+}
+
+.excel-btn{
+    background:#d4af37;
+    color:#102418;
+}
+
 .summary{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -70,7 +79,7 @@ button:hover{
 
 .card{
     background:white;
-    padding:20px;
+    padding:18px;
     text-align:center;
     border-radius:10px;
     box-shadow:0 2px 8px rgba(0,0,0,.12);
@@ -138,14 +147,55 @@ th,td{
     background:#dc3545;
 }
 
-.status.Waiting{
+.status.Waiting-for-Parts{
     background:#0d6efd;
 }
 
+.note-box{
+    background:#fff8e1;
+    border-left:5px solid #d4af37;
+    padding:10px 12px;
+    border-radius:6px;
+    margin-bottom:15px;
+    color:#1f2933;
+}
+
+.report-period{
+    font-weight:bold;
+    color:#1f2933;
+    margin-bottom:15px;
+}
+
+.signature-area{
+    margin-top:50px;
+    display:flex;
+    justify-content:center;
+    gap:70px;
+    page-break-inside:avoid;
+}
+
+.signature-box{
+    width:170px;
+    text-align:center;
+}
+
+.signature-line{
+    border-top:1px solid black;
+    height:25px;
+    margin-bottom:5px;
+}
+
+.signature-title{
+    font-size:12px;
+    font-weight:bold;
+}
+
 @media print{
+
     .sidebar,
     .top-header,
-    .controls{
+    .controls,
+    button{
         display:none !important;
     }
 
@@ -166,6 +216,8 @@ th,td{
         box-shadow:none;
         border:none;
         padding:0;
+        margin-bottom:30px;
+        page-break-inside:auto;
     }
 
     .card{
@@ -175,6 +227,10 @@ th,td{
 
     table{
         font-size:11px;
+    }
+
+    .print-break{
+        page-break-before:always;
     }
 }
 </style>
@@ -190,60 +246,78 @@ th,td{
 
         <header class="top-header">
             <h1>Executive Dashboard</h1>
-            <p>Summary view for weekly work plan and accomplishment monitoring.</p>
+            <p>Weekly repair report, next week targets, and monthly summary.</p>
         </header>
 
         <section class="content-area">
 
             <div class="executive-card">
 
-                <div class="report-header">
+                <div class="report-title">
                     <h2>Motorpool Executive Dashboard</h2>
-                    <h3>Weekly Work Plan and Accomplishment Summary</h3>
-                    <p id="periodText"></p>
+                    <h3>Weekly Repair Monitoring and Accomplishment Summary</h3>
                 </div>
 
                 <div class="controls">
-                    <label>From:</label>
+                    <label>Weekly From:</label>
                     <input type="date" id="fromDate">
 
                     <label>To:</label>
                     <input type="date" id="toDate">
 
-                    <button onclick="loadBossDashboard()">Generate</button>
-                    <button onclick="window.print()">Print</button>
-                    <button onclick="downloadExcel()">Download Excel</button>
+                    <button onclick="generateWeeklyReport()">Generate Weekly Report</button>
+
+                    <label>Monthly:</label>
+                    <input type="month" id="monthFilter">
+
+                    <button onclick="generateMonthlySummary()">Generate Monthly Summary</button>
+
+                    <button class="print-btn" onclick="window.print()">Print Report</button>
+
+                    <button class="excel-btn" onclick="downloadExcel()">Download Excel</button>
                 </div>
+
+                <div class="note-box">
+                    Weekly report includes repairs that started, ended, or continued within the selected week. Finished and unfinished repairs are both included.
+                </div>
+
+            </div>
+
+            <div class="executive-card">
+
+                <h2>Weekly Repair Report</h2>
+
+                <p class="report-period" id="weeklyPeriod"></p>
 
                 <div class="summary">
 
                     <div class="card">
-                        <h2 id="totalTasks">0</h2>
-                        <p>Total Tasks</p>
+                        <h2 id="weeklyTotal">0</h2>
+                        <p>Total Repairs</p>
                     </div>
 
                     <div class="card">
-                        <h2 id="finishedTasks">0</h2>
+                        <h2 id="weeklyFinished">0</h2>
                         <p>Finished</p>
                     </div>
 
                     <div class="card">
-                        <h2 id="ongoingTasks">0</h2>
+                        <h2 id="weeklyOngoing">0</h2>
                         <p>Ongoing</p>
                     </div>
 
                     <div class="card">
-                        <h2 id="delayedTasks">0</h2>
+                        <h2 id="weeklyPlanned">0</h2>
+                        <p>Planned</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="weeklyDelayed">0</h2>
                         <p>Delayed</p>
                     </div>
 
                     <div class="card">
-                        <h2 id="waitingTasks">0</h2>
-                        <p>Waiting Parts</p>
-                    </div>
-
-                    <div class="card">
-                        <h2 id="completionRate">0%</h2>
+                        <h2 id="weeklyCompletion">0%</h2>
                         <p>Completion Rate</p>
                     </div>
 
@@ -257,15 +331,151 @@ th,td{
                                 <th>Staff</th>
                                 <th>Vehicle/Equipment</th>
                                 <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
                                 <th>Actual Accomplishment</th>
                                 <th>Status</th>
-                                <th>% Completion</th>
+                                <th>%</th>
                                 <th>Remarks</th>
                             </tr>
                         </thead>
 
-                        <tbody id="dashboardBody"></tbody>
+                        <tbody id="weeklyBody"></tbody>
                     </table>
+                </div>
+
+            </div>
+
+            <div class="executive-card print-break">
+
+                <h2>Next Week Target Activities</h2>
+
+                <p class="report-period" id="nextWeekPeriod"></p>
+
+                <div class="note-box">
+                    This section shows unfinished repairs that will start next week, end next week, or continue into next week.
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Vehicle/Equipment</th>
+                                <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="nextWeekBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="executive-card print-break">
+
+                <h2>Monthly Summary Report</h2>
+
+                <p class="report-period" id="monthlyPeriod"></p>
+
+                <div class="summary">
+
+                    <div class="card">
+                        <h2 id="monthlyTotal">0</h2>
+                        <p>Total Repairs</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="monthlyFinished">0</h2>
+                        <p>Finished</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="monthlyUnfinished">0</h2>
+                        <p>Unfinished</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="monthlyDelayed">0</h2>
+                        <p>Delayed</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="monthlyWaiting">0</h2>
+                        <p>Waiting Parts</p>
+                    </div>
+
+                    <div class="card">
+                        <h2 id="monthlyCompletion">0%</h2>
+                        <p>Completion Rate</p>
+                    </div>
+
+                </div>
+
+                <h3>Staff Monthly Summary</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff</th>
+                                <th>Total Repairs</th>
+                                <th>Finished</th>
+                                <th>Unfinished</th>
+                                <th>Delayed</th>
+                                <th>Waiting Parts</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="staffSummaryBody"></tbody>
+                    </table>
+                </div>
+
+                <br>
+
+                <h3>Monthly Repair Details</h3>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Vehicle/Equipment</th>
+                                <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="monthlyBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="signature-area">
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Prepared by</div>
+                    </div>
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Checked by</div>
+                    </div>
+
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <div class="signature-title">Approved by</div>
+                    </div>
+
                 </div>
 
             </div>
@@ -288,11 +498,14 @@ allowRoles(["Admin", "Supervisor", "Viewer"]);
 const apiUrl =
 "https://script.google.com/macros/s/AKfycby_b_Wqi3toY94kYQhajzMzZDTZx4g3dB6-S5HoUmBf6TcfzhmevxYylo77-HO6tNGU/exec";
 
-let currentData = [];
+let allTasks = [];
+let weeklyTasks = [];
+let nextWeekTasks = [];
+let monthlyTasks = [];
 
-loadBossDashboard();
+loadExecutiveDashboard();
 
-async function loadBossDashboard(){
+async function loadExecutiveDashboard(){
 
     const response =
         await fetch(apiUrl + "?action=tasks");
@@ -300,50 +513,167 @@ async function loadBossDashboard(){
     const data =
         await response.json();
 
+    allTasks =
+        Array.isArray(data)
+        ? data
+        : [];
+
+    setDefaultDates();
+
+    generateWeeklyReport();
+    generateNextWeekTargets();
+    generateMonthlySummary();
+}
+
+function setDefaultDates(){
+
+    const currentWeek =
+        getCurrentWeekRange();
+
+    document.getElementById("fromDate").value =
+        currentWeek.start;
+
+    document.getElementById("toDate").value =
+        currentWeek.end;
+
+    const today =
+        new Date();
+
+    const month =
+        today.getFullYear() +
+        "-" +
+        String(today.getMonth() + 1).padStart(2, "0");
+
+    document.getElementById("monthFilter").value =
+        month;
+}
+
+function generateWeeklyReport(){
+
     const fromDate =
         document.getElementById("fromDate").value;
 
     const toDate =
         document.getElementById("toDate").value;
 
-    let filteredData = data;
-
-    if(fromDate && toDate){
-
-        filteredData = data.filter(task => {
-
-            if(!task["Start Date"]) return true;
-
-            const taskDate =
-                getDateOnly(task["Start Date"]);
-
-            return taskDate >= fromDate && taskDate <= toDate;
-        });
-
-        document.getElementById("periodText").innerText =
-            "Period Covered: " +
-            formatDate(fromDate) +
-            " to " +
-            formatDate(toDate);
-
-    }else{
-
-        document.getElementById("periodText").innerText =
-            "All Recorded Work Plans";
+    if(!fromDate || !toDate){
+        alert("Please select weekly From and To dates.");
+        return;
     }
 
-    currentData = filteredData;
+    weeklyTasks =
+        allTasks.filter(task =>
+            taskOverlapsPeriod(task, fromDate, toDate)
+        );
 
-    renderSummary(filteredData);
-    renderTable(filteredData);
+    document.getElementById("weeklyPeriod").innerText =
+        "Period Covered: " +
+        formatDisplayDate(fromDate) +
+        " to " +
+        formatDisplayDate(toDate);
+
+    renderSummary(
+        weeklyTasks,
+        "weeklyTotal",
+        "weeklyFinished",
+        "weeklyOngoing",
+        "weeklyPlanned",
+        "weeklyDelayed",
+        "weeklyCompletion"
+    );
+
+    renderWeeklyTable();
 }
 
-function renderSummary(data){
+function generateNextWeekTargets(){
+
+    const range =
+        getNextWeekRange();
+
+    document.getElementById("nextWeekPeriod").innerText =
+        "Target Period: " +
+        formatDisplayDate(range.start) +
+        " to " +
+        formatDisplayDate(range.end);
+
+    nextWeekTasks =
+        allTasks.filter(task => {
+
+            const status =
+                String(task["Status"] || "").toLowerCase();
+
+            return (
+                taskOverlapsPeriod(task, range.start, range.end) &&
+                status !== "finished"
+            );
+        });
+
+    renderNextWeekTable();
+}
+
+function generateMonthlySummary(){
+
+    const monthValue =
+        document.getElementById("monthFilter").value;
+
+    if(!monthValue){
+        alert("Please select a month.");
+        return;
+    }
+
+    const monthStart =
+        monthValue + "-01";
+
+    const monthEnd =
+        getMonthEnd(monthValue);
+
+    monthlyTasks =
+        allTasks.filter(task =>
+            taskOverlapsPeriod(task, monthStart, monthEnd)
+        );
+
+    const dateForLabel =
+        new Date(monthStart);
+
+    document.getElementById("monthlyPeriod").innerText =
+        "For the Month of " +
+        dateForLabel.toLocaleDateString("en-PH",{
+            month:"long",
+            year:"numeric"
+        });
+
+    renderMonthlyCards();
+    renderStaffSummary();
+    renderMonthlyTable();
+}
+
+function taskOverlapsPeriod(task, periodStart, periodEnd){
+
+    const startDate =
+        getDateOnly(task["Start Date"]);
+
+    const targetDate =
+        getDateOnly(task["Target Completion"]);
+
+    if(!startDate && !targetDate){
+        return false;
+    }
+
+    const taskStart =
+        startDate || targetDate;
+
+    const taskEnd =
+        targetDate || startDate;
+
+    return taskStart <= periodEnd && taskEnd >= periodStart;
+}
+
+function renderSummary(data, totalId, finishedId, ongoingId, plannedId, delayedId, completionId){
 
     let finished = 0;
     let ongoing = 0;
+    let planned = 0;
     let delayed = 0;
-    let waiting = 0;
 
     data.forEach(task => {
 
@@ -352,130 +682,313 @@ function renderSummary(data){
 
         if(status === "finished") finished++;
         if(status === "ongoing") ongoing++;
+        if(status === "planned") planned++;
         if(status === "delayed") delayed++;
-        if(status.includes("waiting")) waiting++;
     });
 
-    const total = data.length;
+    const total =
+        data.length;
 
     const completion =
         total > 0
         ? Math.round((finished / total) * 100)
         : 0;
 
-    document.getElementById("totalTasks").innerText = total;
-    document.getElementById("finishedTasks").innerText = finished;
-    document.getElementById("ongoingTasks").innerText = ongoing;
-    document.getElementById("delayedTasks").innerText = delayed;
-    document.getElementById("waitingTasks").innerText = waiting;
-    document.getElementById("completionRate").innerText = completion + "%";
+    document.getElementById(totalId).innerText = total;
+    document.getElementById(finishedId).innerText = finished;
+    document.getElementById(ongoingId).innerText = ongoing;
+    document.getElementById(plannedId).innerText = planned;
+    document.getElementById(delayedId).innerText = delayed;
+    document.getElementById(completionId).innerText = completion + "%";
 }
 
-function renderTable(data){
+function renderMonthlyCards(){
 
-    const dashboardBody =
-        document.getElementById("dashboardBody");
+    let finished = 0;
+    let delayed = 0;
+    let waiting = 0;
 
-    dashboardBody.innerHTML = "";
+    monthlyTasks.forEach(task => {
 
-    if(data.length === 0){
+        const status =
+            String(task["Status"] || "").toLowerCase();
 
-        dashboardBody.innerHTML =
-        `
-        <tr>
-            <td colspan="8" style="text-align:center;">
-                No records found.
-            </td>
-        </tr>
-        `;
+        if(status === "finished") finished++;
+        if(status === "delayed") delayed++;
+        if(status.includes("waiting")) waiting++;
+    });
+
+    const total =
+        monthlyTasks.length;
+
+    const unfinished =
+        total - finished;
+
+    const completion =
+        total > 0
+        ? Math.round((finished / total) * 100)
+        : 0;
+
+    document.getElementById("monthlyTotal").innerText = total;
+    document.getElementById("monthlyFinished").innerText = finished;
+    document.getElementById("monthlyUnfinished").innerText = unfinished;
+    document.getElementById("monthlyDelayed").innerText = delayed;
+    document.getElementById("monthlyWaiting").innerText = waiting;
+    document.getElementById("monthlyCompletion").innerText = completion + "%";
+}
+
+function renderWeeklyTable(){
+
+    const body =
+        document.getElementById("weeklyBody");
+
+    body.innerHTML = "";
+
+    if(weeklyTasks.length === 0){
+
+        body.innerHTML =
+            emptyRow(10, "No weekly repair records found.");
 
         return;
     }
 
-    data.forEach(task => {
+    weeklyTasks.forEach(task => {
 
         const status =
             task["Status"] || "";
 
         const statusClass =
-            status.includes("Waiting")
-            ? "Waiting"
-            : status;
+            getStatusClass(status);
 
-        dashboardBody.innerHTML += `
-        <tr>
-            <td>${task["No."] || ""}</td>
-            <td>${task["Staff Name"] || ""}</td>
-            <td>${task["Vehicle/Equipment"] || ""}</td>
-            <td>${task["Target Activity"] || ""}</td>
-            <td>${task["Actual Accomplishment"] || ""}</td>
-            <td>
-                <span class="status ${statusClass}">
-                    ${status}
-                </span>
-            </td>
-            <td>${task["% Completion"] || ""}</td>
-            <td>${task["Remarks"] || ""}</td>
-        </tr>
+        body.innerHTML += `
+            <tr>
+                <td>${safeText(task["No."])}</td>
+                <td>${safeText(task["Staff Name"])}</td>
+                <td>${safeText(task["Vehicle/Equipment"])}</td>
+                <td>${safeText(task["Target Activity"])}</td>
+                <td>${formatDate(task["Start Date"])}</td>
+                <td>${formatDate(task["Target Completion"])}</td>
+                <td>${safeText(task["Actual Accomplishment"])}</td>
+                <td>
+                    <span class="status ${statusClass}">
+                        ${safeText(status)}
+                    </span>
+                </td>
+                <td>${safeText(task["% Completion"])}</td>
+                <td>${safeText(task["Remarks"])}</td>
+            </tr>
+        `;
+    });
+}
+
+function renderNextWeekTable(){
+
+    const body =
+        document.getElementById("nextWeekBody");
+
+    body.innerHTML = "";
+
+    if(nextWeekTasks.length === 0){
+
+        body.innerHTML =
+            emptyRow(8, "No target activities found for next week.");
+
+        return;
+    }
+
+    nextWeekTasks.forEach(task => {
+
+        const status =
+            task["Status"] || "";
+
+        const statusClass =
+            getStatusClass(status);
+
+        body.innerHTML += `
+            <tr>
+                <td>${safeText(task["No."])}</td>
+                <td>${safeText(task["Staff Name"])}</td>
+                <td>${safeText(task["Vehicle/Equipment"])}</td>
+                <td>${safeText(task["Target Activity"])}</td>
+                <td>${formatDate(task["Start Date"])}</td>
+                <td>${formatDate(task["Target Completion"])}</td>
+                <td>
+                    <span class="status ${statusClass}">
+                        ${safeText(status)}
+                    </span>
+                </td>
+                <td>${safeText(task["Remarks"])}</td>
+            </tr>
+        `;
+    });
+}
+
+function renderMonthlyTable(){
+
+    const body =
+        document.getElementById("monthlyBody");
+
+    body.innerHTML = "";
+
+    if(monthlyTasks.length === 0){
+
+        body.innerHTML =
+            emptyRow(8, "No monthly repair records found.");
+
+        return;
+    }
+
+    monthlyTasks.forEach(task => {
+
+        const status =
+            task["Status"] || "";
+
+        const statusClass =
+            getStatusClass(status);
+
+        body.innerHTML += `
+            <tr>
+                <td>${safeText(task["No."])}</td>
+                <td>${safeText(task["Staff Name"])}</td>
+                <td>${safeText(task["Vehicle/Equipment"])}</td>
+                <td>${safeText(task["Target Activity"])}</td>
+                <td>${formatDate(task["Start Date"])}</td>
+                <td>${formatDate(task["Target Completion"])}</td>
+                <td>
+                    <span class="status ${statusClass}">
+                        ${safeText(status)}
+                    </span>
+                </td>
+                <td>${safeText(task["Remarks"])}</td>
+            </tr>
+        `;
+    });
+}
+
+function renderStaffSummary(){
+
+    const summary = {};
+
+    monthlyTasks.forEach(task => {
+
+        const staff =
+            task["Staff Name"] || "Unassigned";
+
+        const status =
+            String(task["Status"] || "").toLowerCase();
+
+        if(!summary[staff]){
+            summary[staff] = {
+                total: 0,
+                finished: 0,
+                unfinished: 0,
+                delayed: 0,
+                waiting: 0
+            };
+        }
+
+        summary[staff].total++;
+
+        if(status === "finished"){
+            summary[staff].finished++;
+        }else{
+            summary[staff].unfinished++;
+        }
+
+        if(status === "delayed"){
+            summary[staff].delayed++;
+        }
+
+        if(status.includes("waiting")){
+            summary[staff].waiting++;
+        }
+    });
+
+    const body =
+        document.getElementById("staffSummaryBody");
+
+    body.innerHTML = "";
+
+    const names =
+        Object.keys(summary);
+
+    if(names.length === 0){
+
+        body.innerHTML =
+            emptyRow(6, "No staff summary available.");
+
+        return;
+    }
+
+    names.forEach(name => {
+
+        const item =
+            summary[name];
+
+        body.innerHTML += `
+            <tr>
+                <td>${safeText(name)}</td>
+                <td>${item.total}</td>
+                <td>${item.finished}</td>
+                <td>${item.unfinished}</td>
+                <td>${item.delayed}</td>
+                <td>${item.waiting}</td>
+            </tr>
         `;
     });
 }
 
 function downloadExcel(){
 
-    if(currentData.length === 0){
-        alert("No data available to download.");
-        return;
-    }
+    let html = `
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body>
+            <h2>Motorpool Executive Dashboard</h2>
 
-    let table = `
-    <table border="1">
-        <tr>
-            <th colspan="8">Motorpool Executive Dashboard</th>
-        </tr>
-        <tr>
-            <th colspan="8">${document.getElementById("periodText").innerText}</th>
-        </tr>
-        <tr>
-            <th>No.</th>
-            <th>Staff</th>
-            <th>Vehicle/Equipment</th>
-            <th>Target Activity</th>
-            <th>Actual Accomplishment</th>
-            <th>Status</th>
-            <th>% Completion</th>
-            <th>Remarks</th>
-        </tr>
+            <h3>Weekly Repair Report</h3>
+            <p>${document.getElementById("weeklyPeriod").innerText}</p>
+            ${tableToExcelHtml("weeklyBody", [
+                "No.", "Staff", "Vehicle/Equipment", "Target Activity",
+                "Start Date", "Target Completion", "Actual Accomplishment",
+                "Status", "%", "Remarks"
+            ])}
+
+            <br><br>
+
+            <h3>Next Week Target Activities</h3>
+            <p>${document.getElementById("nextWeekPeriod").innerText}</p>
+            ${tableToExcelHtml("nextWeekBody", [
+                "No.", "Staff", "Vehicle/Equipment", "Target Activity",
+                "Start Date", "Target Completion", "Status", "Remarks"
+            ])}
+
+            <br><br>
+
+            <h3>Monthly Staff Summary</h3>
+            <p>${document.getElementById("monthlyPeriod").innerText}</p>
+            ${tableToExcelHtml("staffSummaryBody", [
+                "Staff", "Total Repairs", "Finished", "Unfinished", "Delayed", "Waiting Parts"
+            ])}
+        </body>
+        </html>
     `;
 
-    currentData.forEach(task => {
+    const file =
+        new Blob([html], {
+            type:"application/vnd.ms-excel"
+        });
 
-        table += `
-        <tr>
-            <td>${task["No."] || ""}</td>
-            <td>${task["Staff Name"] || ""}</td>
-            <td>${task["Vehicle/Equipment"] || ""}</td>
-            <td>${task["Target Activity"] || ""}</td>
-            <td>${task["Actual Accomplishment"] || ""}</td>
-            <td>${task["Status"] || ""}</td>
-            <td>${task["% Completion"] || ""}</td>
-            <td>${task["Remarks"] || ""}</td>
-        </tr>
-        `;
-    });
+    const url =
+        URL.createObjectURL(file);
 
-    table += `</table>`;
-
-    const file = new Blob([table], {
-        type:"application/vnd.ms-excel"
-    });
-
-    const url = URL.createObjectURL(file);
-
-    const link = document.createElement("a");
+    const link =
+        document.createElement("a");
 
     link.href = url;
-    link.download = "Motorpool_Executive_Dashboard.xls";
+    link.download = "Motorpool_Executive_Report.xls";
 
     document.body.appendChild(link);
     link.click();
@@ -484,13 +997,130 @@ function downloadExcel(){
     URL.revokeObjectURL(url);
 }
 
+function tableToExcelHtml(bodyId, headers){
+
+    const body =
+        document.getElementById(bodyId);
+
+    let html =
+        "<table border='1'><tr>";
+
+    headers.forEach(header => {
+        html += "<th>" + header + "</th>";
+    });
+
+    html += "</tr>";
+
+    body.querySelectorAll("tr").forEach(row => {
+        html += "<tr>";
+
+        row.querySelectorAll("td").forEach(cell => {
+            html += "<td>" + cell.innerText + "</td>";
+        });
+
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    return html;
+}
+
+function getCurrentWeekRange(){
+
+    const today =
+        new Date();
+
+    const day =
+        today.getDay();
+
+    const diffToMonday =
+        day === 0
+        ? -6
+        : 1 - day;
+
+    const monday =
+        new Date(today);
+
+    monday.setDate(today.getDate() + diffToMonday);
+
+    const sunday =
+        new Date(monday);
+
+    sunday.setDate(monday.getDate() + 6);
+
+    return {
+        start: toInputDate(monday),
+        end: toInputDate(sunday)
+    };
+}
+
+function getNextWeekRange(){
+
+    const today =
+        new Date();
+
+    const day =
+        today.getDay();
+
+    let daysUntilNextMonday =
+        day === 0
+        ? 1
+        : 8 - day;
+
+    const nextMonday =
+        new Date(today);
+
+    nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+
+    const nextSunday =
+        new Date(nextMonday);
+
+    nextSunday.setDate(nextMonday.getDate() + 6);
+
+    return {
+        start: toInputDate(nextMonday),
+        end: toInputDate(nextSunday)
+    };
+}
+
+function getMonthEnd(monthValue){
+
+    const parts =
+        monthValue.split("-");
+
+    const year =
+        Number(parts[0]);
+
+    const month =
+        Number(parts[1]);
+
+    const lastDay =
+        new Date(year, month, 0);
+
+    return toInputDate(lastDay);
+}
+
 function getDateOnly(dateString){
 
-    if(!dateString) return "";
+    if(!dateString){
+        return "";
+    }
 
-    const date = new Date(dateString);
+    const date =
+        new Date(dateString);
 
-    const year = date.getFullYear();
+    if(isNaN(date)){
+        return String(dateString).substring(0, 10);
+    }
+
+    return toInputDate(date);
+}
+
+function toInputDate(date){
+
+    const year =
+        date.getFullYear();
 
     const month =
         String(date.getMonth() + 1).padStart(2, "0");
@@ -498,20 +1128,67 @@ function getDateOnly(dateString){
     const day =
         String(date.getDate()).padStart(2, "0");
 
-    return `${year}-${month}-${day}`;
+    return year + "-" + month + "-" + day;
 }
 
 function formatDate(dateString){
 
-    if(!dateString) return "";
+    if(!dateString){
+        return "";
+    }
 
-    const date = new Date(dateString);
+    const date =
+        new Date(dateString);
+
+    if(isNaN(date)){
+        return safeText(dateString);
+    }
 
     return date.toLocaleDateString("en-PH",{
         year:"numeric",
         month:"short",
         day:"numeric"
     });
+}
+
+function formatDisplayDate(dateString){
+
+    const date =
+        new Date(dateString);
+
+    return date.toLocaleDateString("en-PH",{
+        year:"numeric",
+        month:"short",
+        day:"numeric"
+    });
+}
+
+function getStatusClass(status){
+
+    return String(status || "")
+        .replace(/\s+/g, "-")
+        .replace(/[^a-zA-Z0-9-]/g, "");
+}
+
+function emptyRow(colspan, message){
+
+    return `
+        <tr>
+            <td colspan="${colspan}" style="text-align:center;">
+                ${message}
+            </td>
+        </tr>
+    `;
+}
+
+function safeText(value){
+
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 </script>
 
