@@ -8,29 +8,39 @@
 <link rel="stylesheet" href="css/gov-theme.css?v=1">
 
 <style>
-.dashboard-card{
-    background:white;
-    border-radius:12px;
-    border:1px solid #d9e2dc;
-    box-shadow:0 4px 12px rgba(0,0,0,.07);
-    overflow:hidden;
-}
-
 .dashboard-tools{
     margin-bottom:18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
 }
 
 .search{
-    width:320px;
+    width:340px;
     max-width:100%;
     padding:11px;
     border:1px solid #d9e2dc;
     border-radius:8px;
 }
 
+.print-btn{
+    padding:11px 14px;
+    border:none;
+    background:#1f3a5f;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.print-btn:hover{
+    background:#152a45;
+}
+
 .card-container{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
     gap:16px;
     margin-bottom:22px;
 }
@@ -56,15 +66,36 @@
     color:#6b7280;
 }
 
+.dashboard-card{
+    background:white;
+    border-radius:12px;
+    border:1px solid #d9e2dc;
+    box-shadow:0 4px 12px rgba(0,0,0,.07);
+    overflow:hidden;
+    margin-bottom:24px;
+}
+
 .table-header{
     padding:16px 20px;
     border-bottom:1px solid #d9e2dc;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
 }
 
 .table-header h2{
     margin:0;
     color:#0b4f2f;
     font-size:20px;
+    text-transform:uppercase;
+}
+
+.table-header p{
+    margin:4px 0 0;
+    color:#6b7280;
+    font-size:13px;
 }
 
 .table-wrapper{
@@ -107,6 +138,7 @@ tr:hover{
     font-weight:bold;
     font-size:12px;
     display:inline-block;
+    white-space:nowrap;
 }
 
 .status.Planned{ background:#6c757d; }
@@ -128,6 +160,48 @@ td button{
 td button:hover{
     background:#083b24;
 }
+
+.note-box{
+    background:#fff8e1;
+    border-left:5px solid #d4af37;
+    padding:12px;
+    border-radius:6px;
+    margin-bottom:18px;
+    color:#1f2933;
+}
+
+@media print{
+
+    .sidebar,
+    .top-header,
+    .dashboard-tools,
+    td button{
+        display:none !important;
+    }
+
+    .main-content{
+        margin-left:0 !important;
+    }
+
+    .content-area{
+        padding:0 !important;
+    }
+
+    body{
+        background:white;
+        margin:10px;
+    }
+
+    .dashboard-card,
+    .card{
+        box-shadow:none;
+        border:1px solid #ccc;
+    }
+
+    table{
+        font-size:11px;
+    }
+}
 </style>
 
 </head>
@@ -141,27 +215,35 @@ td button:hover{
     <main class="main-content">
 
         <header class="top-header">
-            <h1>Motorpool Management Dashboard</h1>
-            <p>Weekly Work Plan · Accomplishment Monitoring · Vehicle and Inventory Management</p>
+            <h1>Motorpool Work Output Dashboard</h1>
+            <p>Weekly work plan · Accomplishment monitoring · Drivers, mechanics, supervisors, and motorpool staff</p>
             <p id="userInfo"></p>
         </header>
 
         <section class="content-area">
+
+            <div class="note-box">
+                This dashboard includes all motorpool work activities, not only repairs. Driver outputs, hauling, transport, field support, PMS, inspection, and other assignments may also be monitored here.
+            </div>
 
             <div class="dashboard-tools">
                 <input
                     type="text"
                     id="search"
                     class="search"
-                    placeholder="Search staff, vehicle, activity..."
+                    placeholder="Search staff, position, vehicle, or activity..."
                     onkeyup="filterTable()">
+
+                <button class="print-btn" onclick="window.print()">
+                    Print Dashboard
+                </button>
             </div>
 
             <div class="card-container">
 
                 <div class="card">
                     <h2 id="totalTasks">0</h2>
-                    <p>Total Tasks</p>
+                    <p>Total Activities</p>
                 </div>
 
                 <div class="card">
@@ -179,12 +261,78 @@ td button:hover{
                     <p>Finished</p>
                 </div>
 
+                <div class="card">
+                    <h2 id="delayedTasks">0</h2>
+                    <p>Delayed</p>
+                </div>
+
             </div>
 
             <div class="dashboard-card">
 
                 <div class="table-header">
-                    <h2>Weekly Work Plan</h2>
+                    <div>
+                        <h2>Summary by Position</h2>
+                        <p>Shows weekly output count by personnel position such as Driver, Mechanic, or Supervisor.</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Position</th>
+                                <th>Total Activities</th>
+                                <th>Finished</th>
+                                <th>Unfinished</th>
+                                <th>Delayed</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="positionBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card">
+
+                <div class="table-header">
+                    <div>
+                        <h2>Next Week Target Activities</h2>
+                        <p id="nextWeekPeriod"></p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Staff</th>
+                                <th>Position</th>
+                                <th>Vehicle / Equipment</th>
+                                <th>Target Activity</th>
+                                <th>Start Date</th>
+                                <th>Target Completion</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="nextWeekBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="dashboard-card">
+
+                <div class="table-header">
+                    <div>
+                        <h2>Weekly Work Plan and Accomplishment Records</h2>
+                        <p>All recorded motorpool work activities.</p>
+                    </div>
                 </div>
 
                 <div class="table-wrapper">
@@ -196,7 +344,7 @@ td button:hover{
                                 <th>No.</th>
                                 <th>Staff</th>
                                 <th>Position</th>
-                                <th>Vehicle</th>
+                                <th>Vehicle / Equipment</th>
                                 <th>Target Activity</th>
                                 <th>Start Date</th>
                                 <th>Target Completion</th>
@@ -228,7 +376,7 @@ allowRoles(["Admin", "Supervisor", "Mechanic", "Viewer"]);
 </script>
 
 <script src="js/sidebar.js?v=3"></script>
-<script src="js/dashboard.js?v=6"></script>
+<script src="js/dashboard.js?v=7"></script>
 
 </body>
 </html>
